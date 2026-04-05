@@ -39,7 +39,7 @@ sequenceDiagram
 When a submission is made:
 
 1. Code, contest alias, problem, and language sent via HTTP POST to `/api/run/create/`
-2. Nginx forwards to PHP (HHVM)
+2. Nginx forwards the request to **PHP** (PHP-FPM in typical deployments; the entrypoint loads `frontend/server/bootstrap.php`)
 3. `bootstrap.php` loads configuration and initializes database
 4. `Request` object created with parameters
 5. URL tokenized: `/api/run/create/` → `['run', 'create']`
@@ -57,6 +57,7 @@ The controller:
    - Contest time limit not expired
    - Submission rate limit (60 seconds per problem)
    - Contest visibility (public or user listed)
+   - **Lockdown mode** (when enabled): extra checks apply—for example, blocking submissions that would count as **practice mode** when the platform is locked down for a contest window
 4. Calculates penalty based on contest policy
 5. Generates random GUID
 6. Stores submission in database

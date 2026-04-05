@@ -91,6 +91,10 @@ Returns the current UNIX timestamp according to the server's internal clock. Use
 
 **Required Permissions:** None
 
+## Complete endpoint catalog
+
+For an **exhaustive** list of API methods grouped by controller, see the auto-generated **[Controllers README](https://github.com/omegaup/omegaup/blob/main/frontend/server/src/Controllers/README.md)** in the omegaUp repository. The human-written pages here (`users.md`, `contests.md`, …) focus on the most common flows; the README is the best reference when you need a specific `apiSomething` name.
+
 ## Rate Limiting
 
 Some endpoints have rate limits:

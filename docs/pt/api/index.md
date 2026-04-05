@@ -108,6 +108,14 @@ Respostas de erro:
   "errorcode": 400
 }
 ```
+## Catálogo completo de endpoints
+
+Este site documenta as **categorias** principais da API. O índice **gerado e autoritativo** de controladores e rotas está no repositório principal:
+
+**[frontend/server/src/Controllers/README.md](https://github.com/omegaup/omegaup/blob/main/frontend/server/src/Controllers/README.md)**
+
+Convenção: um pedido a `/api/<segmento>/<ação>/` é tratado por `<Segmento>Controller::api<Ação>` em `frontend/server/src/Controllers/` (com os ajustes de nome usuais em PHP).
+
 ## Limitação de taxa
 
 Alguns endpoints têm limites de taxa para evitar abusos:

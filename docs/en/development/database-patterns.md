@@ -100,6 +100,63 @@ VO and DAO classes are auto-generated from the database schema:
 2. Run `./stuff/update-dao.sh`
 3. VO and DAO classes are regenerated
 
+## User notifications (`Notifications` table)
+
+The web UI loads pending rows for a user from the **`Notifications`** table. Each row’s **`contents`** column is JSON that drives rendering in [`Notification.vue`](https://github.com/omegaup/omegaup/blob/main/frontend/www/js/omegaup/components/notification/Notification.vue).
+
+### JSON shape
+
+At minimum, include a `type` string so the component picks the correct layout. Other keys are a **payload** specific to that type.
+
+```json
+{
+  "type": "notificationType",
+  "any_field": "value"
+}
+```
+
+### Supported `type` values (high level)
+
+| `type` | Purpose | Typical payload |
+|--------|---------|-----------------|
+| `badge` | Badge earned | `badge` — badge identifier (e.g. score milestone name) |
+| `demotion` | Account/status change | `status`, `message` |
+| `general_notification` | Free-form text | `message`, optional `url` |
+
+### Localized “system” style (`body`)
+
+For translations via the i18n system, you can use:
+
+```json
+{
+  "type": "notification-type",
+  "body": {
+    "localizationString": "translationKey",
+    "localizationParams": {
+      "param1": "value1"
+    },
+    "url": "/path/to/resource",
+    "iconUrl": "/media/icon.png"
+  }
+}
+```
+
+### Example (badge)
+
+Inserting a row whose `contents` resembles:
+
+```json
+{
+  "type": "badge",
+  "badge": "500score"
+}
+```
+
+tells the UI to render a badge-style notification; the extra fields are interpreted in `Notification.vue`. For a concrete server-side example, see [`stuff/cron/assign_badges.py`](https://github.com/omegaup/omegaup/blob/main/stuff/cron/assign_badges.py) in the main repository.
+
+!!! tip "Questions"
+    Ask in the omegaUp [Discord](https://discord.gg/gMEMX7Mrwe) developer channels if you are unsure which `type` and payload to use.
+
 ## Related Documentation
 
 - **[Backend Architecture](../architecture/backend.md)** - Backend structure

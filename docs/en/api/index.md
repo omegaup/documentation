@@ -114,6 +114,14 @@ Error responses:
 }
 ```
 
+## Complete endpoint catalog
+
+This site documents the main API **categories** in detail. The wiki used to duplicate a very long flat list of every `/api/...` path; the **generated, authoritative index** of controllers and routes lives in the main repository:
+
+**[frontend/server/src/Controllers/README.md](https://github.com/omegaup/omegaup/blob/main/frontend/server/src/Controllers/README.md)**
+
+Routing convention: a request to `/api/<segment>/<action>/` is handled by `<Segment>Controller::api<Action>` in `frontend/server/src/Controllers/` (with the usual PHP naming adjustments). Use the generated README for exact method names and parameters while developing.
+
 ## Rate Limiting
 
 Some endpoints have rate limits to prevent abuse:

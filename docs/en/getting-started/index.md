@@ -55,14 +55,35 @@ If you're new to omegaUp, we recommend:
 
 </div>
 
-## Development Environment Overview
+## Development environment overview
 
-omegaUp uses Docker for local development. The main components include:
+omegaUp uses Docker for local development. At a high level:
 
-- **Frontend**: PHP + MySQL (MVC architecture)
-- **Backend**: Go-based grader and runner system
-- **Frontend UI**: Vue.js + TypeScript + Bootstrap 4
-- **Database**: MySQL 8.0.39
+- **Web + API**: PHP controllers and DAOs over **MySQL** (classic MVC; JSON APIs)
+- **Judge**: **Go** grader, runners, and **minijail** sandbox
+- **Browser UI**: **Vue.js**, **TypeScript**, **Bootstrap 4** (ongoing migration away from legacy templates)
+- **Problem storage**: **gitserver** and zip/case layout as documented under [Features → Problems](../features/problems/index.md)
+
+### Where things live in the repo (quick map)
+
+| Area | Path (in the main repository) |
+|------|--------------------------------|
+| HTTP API / business rules | `frontend/server/src/Controllers/` |
+| Database access | `frontend/server/src/DAO/` |
+| Migrations | `frontend/database/` |
+| TypeScript / Vue | `frontend/www/js/` |
+| Legacy templates / i18n | `frontend/templates/` |
+| PHPUnit API tests | `frontend/tests/controllers/` |
+| Cypress E2E | `cypress/e2e/` |
+
+### Papers (architecture context)
+
+- [omegaUp: Cloud-Based Contest Management System](http://www.ioinformatics.org/oi/pdf/v8_2014_169_178.pdf) (IOI Journal, 2014)
+- [libinteractive](https://ioinformatics.org/journal/v9_2015_3_14.pdf) — interactive tasks
+
+## Supported browsers (contributors and contestants)
+
+Use a **current evergreen** browser (**Chrome**, **Firefox**, **Safari**, or **Edge**). The site is **HTTPS-only**. Very old Internet Explorer versions are **not** supported.
 
 ## Development Accounts
 
@@ -84,7 +105,7 @@ When you set up your local environment, you'll have access to two pre-configured
 
 - **Website**: [omegaup.com](https://omegaup.com)
 - **GitHub**: [github.com/omegaup/omegaup](https://github.com/omegaup/omegaup)
-- **Discord**: [Join our Discord server](https://discord.com/invite/K3JFd9d3wk) for community support
+- **Discord**: [Join our Discord server](https://discord.gg/gMEMX7Mrwe) for community support
 - **Issues**: [Report bugs or request features](https://github.com/omegaup/omegaup/issues)
 
 ---

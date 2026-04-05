@@ -42,9 +42,44 @@ Before you start:
 !!! failure "PR Will Fail Without Issue Assignment"
     If your PR is not linked to an assigned issue, automated checks will fail and your PR cannot be merged.
 
+### Self-service assignment (bot)
+
+This repository uses [`takanome-dev/assign-issue-action`](https://github.com/takanome-dev/assign-issue-action) so contributors can claim work without waiting for a manual assign click on every issue.
+
+**Commands** (comment on the GitHub issue):
+
+- `/assign` — assign the issue to yourself.
+- `/unassign` — remove yourself from the issue.
+
+The bot may also suggest assignment when your comment shows you want to work on the issue.
+
+**Limits and deadlines**
+
+- You can have at most **5** issues assigned to you at the same time (across the repo).
+- After you are assigned, you must **open a pull request** (a **draft** PR is enough) within **7 days**.
+- A reminder is posted about halfway through that window (~3.5 days).
+- If no PR is opened by day 7, you are **automatically unassigned** and **blocked from self-assigning again** on that issue; ask a maintainer if you still need it.
+
+**Experienced issue authors**
+
+- If **you created the issue** and you have at least **10 merged PRs** in this repository, you may self-assign **without** counting against the “5 active assignments” limit for issues you authored.
+- The **7-day rule** (open a PR after assignment) still applies.
+- For issues **created by someone else**, the usual limit of **5** concurrent assignments still applies.
+
+**Tips**
+
+- Comment `/assign`, then open a draft PR early so you do not lose the assignment.
+- Use `/unassign` if you cannot continue, so someone else can take the issue.
+- If you need more time, ask a maintainer to add the **`📌 Pinned`** label on the issue.
+
 ## Setting Up Your Fork and Remotes
 
-You only need to do this once:
+You only need to do this once. The names below match the **usual GitHub fork workflow** so tutorials and tooling stay familiar:
+
+- **`origin`** — your fork (`https://github.com/YOURUSERNAME/omegaup.git`): where you **push** branches and open pull requests from.
+- **`upstream`** — the canonical repository (`https://github.com/omegaup/omegaup.git`): where you **pull** official changes from.
+
+Some older omegaUp wiki pages used the opposite names; this documentation site uses the convention above.
 
 ### 1. Fork the Repository
 
@@ -57,65 +92,54 @@ git clone https://github.com/YOURUSERNAME/omegaup.git
 cd omegaup
 ```
 
-### 3. Configure Remotes
+### 3. Add `upstream` and verify remotes
 
-Check your current remotes:
+Your clone already has **`origin`** pointing at your fork. Add **`upstream`** once:
 
 ```bash
+git remote add upstream https://github.com/omegaup/omegaup.git
 git remote -v
 ```
 
-You should see something like:
+You should see:
 
 ```
-origin        https://github.com/YOURUSERNAME/omegaup.git (fetch)
-origin        https://github.com/YOURUSERNAME/omegaup.git (push)
+origin     https://github.com/YOURUSERNAME/omegaup.git (fetch)
+origin     https://github.com/YOURUSERNAME/omegaup.git (push)
+upstream   https://github.com/omegaup/omegaup.git (fetch)
+upstream   https://github.com/omegaup/omegaup.git (push)
 ```
 
-If not, add the omegaUp repository as `origin`:
+If `origin` is wrong (for example you cloned the wrong URL), fix it with:
 
 ```bash
-git remote add origin https://github.com/omegaup/omegaup.git
-```
-
-Then add your fork as `upstream`:
-
-```bash
-git remote add upstream https://github.com/YOURUSERNAME/omegaup.git
-```
-
-Your final configuration should look like:
-
-```
-origin	https://github.com/omegaup/omegaup.git (fetch)
-origin	https://github.com/omegaup/omegaup.git (push)
-upstream	https://github.com/YOURUSERNAME/omegaup.git (fetch)
-upstream	https://github.com/YOURUSERNAME/omegaup.git (push)
+git remote set-url origin https://github.com/YOURUSERNAME/omegaup.git
 ```
 
 ## Updating Your main Branch
 
-Keep your `main` branch synchronized with omegaUp's `main`:
+Keep your local `main` and your **fork’s** `main` aligned with **omegaUp’s** `main`:
 
 ```bash
-git checkout main              # Switch to main branch
-git fetch origin               # Fetch latest changes
-git pull --rebase origin main  # Sync with omegaUp/main
-git push upstream              # Update your fork
+git checkout main
+git fetch upstream
+git pull --rebase upstream main
+git push origin main
 ```
 
-!!! warning "Force Push Warning"
-    If `git push upstream` fails, it means you made changes directly to `main`. Use `git push upstream -f` to force push, but avoid making changes to `main` in the future.
+!!! warning "If push to main is rejected"
+    If `git push origin main` fails because you committed directly on `main`, prefer resetting to a clean state with maintainer help, or use `git push origin main --force-with-lease` only when you understand the risk. In general, **never commit on `main`**; use a feature branch instead.
 
 ## Starting a New Change
 
 ### 1. Create a Feature Branch
 
-Create a new branch from `origin/main`:
+Create a new branch from the latest official `main`:
 
 ```bash
-git checkout -b feature-name origin/main
-git push upstream feature-name
+git fetch upstream
+git checkout -b feature-name upstream/main
+git push -u origin feature-name
 ```
 
 !!! tip "Branch Naming"
@@ -167,10 +191,10 @@ git config --global user.name "Your Name"
 ### 1. Push Your Changes
 
 ```bash
-git push -u upstream feature-name
+git push -u origin feature-name
 ```
 
-The `-u` flag sets up tracking between your local branch and the remote branch.
+The `-u` flag sets up tracking between your local branch and **`origin`** (your fork).
 
 ### 2. Open Pull Request on GitHub
 
@@ -246,17 +270,53 @@ git branch -D feature-name
 Or use Git:
 
 ```bash
-git push upstream --delete feature-name
+git push origin --delete feature-name
 ```
 
 ### Clean Up Remote References
 
-Remove stale remote branch references:
+Remove stale remote-tracking branches (for example after a branch was deleted on GitHub):
 
 ```bash
-git remote prune upstream --dry-run  # Preview what will be removed
-git remote prune upstream             # Actually remove them
+git remote prune origin --dry-run  # Preview what will be removed
+git remote prune origin             # Actually remove them
 ```
+
+## Fixing a pull request (bad commits or history)
+
+If you already pushed commits to your fork and need to **squash**, **drop**, or **edit** recent commits, use an interactive rebase, then push with lease.
+
+### Squash or fixup the last `n` commits
+
+```bash
+git rebase -i HEAD~n
+```
+
+Replace `n` with how many commits to edit. In the editor, keep the top commit as `pick` and change the rest to `fixup` (or `f`) to fold them into the first without keeping their messages. Save and close.
+
+Prefer **force-with-lease** so you do not overwrite someone else’s work by mistake:
+
+```bash
+git push --force-with-lease
+```
+
+### Change the last commit message only
+
+If the bad commit is the **latest** and you have **not** pushed yet, or you are OK rewriting that commit on the branch:
+
+```bash
+git commit --amend
+```
+
+If you already pushed that commit:
+
+```bash
+git commit --amend
+git push --force-with-lease
+```
+
+!!! warning "Rewriting public history"
+    Only rewrite history on **your** feature branch. Never force-push to `main` on the canonical repo.
 
 ## Additional Settings
 
@@ -301,7 +361,7 @@ ln -sf ~/.mysql.docker.cnf .my.cnf
 
 - Review the [Architecture Overview](../architecture/index.md) to understand the codebase
 - Check out [Development Guides](../development/index.md) for detailed guides
-- Join our [Discord server](https://discord.com/invite/K3JFd9d3wk) to connect with the community
+- Join our [Discord server](https://discord.gg/gMEMX7Mrwe) to connect with the community
 
 ---
 

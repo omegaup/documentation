@@ -64,36 +64,74 @@ Verificación de pruebas de componentes de Vue:
 - Comportamiento esperado
 - Props y estado
 
-## Pruebas de ciprés E2E
+## Pruebas E2E con Cypress
 
-### Apertura del corredor de prueba de Cypress
+Las pruebas de extremo a extremo están en la carpeta `cypress/` en la raíz del repositorio. **Cypress suele ejecutarse en tu máquina anfitriona** (no dentro del contenedor Docker del frontend de omegaUp), así que necesitas Node, dependencias de Yarn y, en Linux, varias bibliotecas del sistema para el ejecutable basado en Electron.
+
+La versión fijada aparece en el `package.json` raíz (campo `cypress`). Tras actualizar dependencias, ejecuta `yarn install` y, si falta el binario:
+
+```bash
+./node_modules/.bin/cypress install
+```
+
+### Abrir y ejecutar Cypress
 
 ```bash
 npx cypress open
+# o
+./node_modules/.bin/cypress open
 ```
-Abre una interfaz gráfica para pruebas interactivas.
 
-**Requisitos previos**:
-- Node.js instalado
-- NPM instalado
--libasound2 (Linux)
-
-**Ubicación**: contenedor Docker exterior
-
-### Ejecución de pruebas de Cypress
+Modo headless:
 
 ```bash
+npx cypress run
+# o
 yarn test:e2e
 ```
-Ejecuta todas las pruebas de Cypress sin cabeza.
 
-### Archivos de prueba
+`yarn test:e2e` ejecuta `cypress run --browser chrome` (ver scripts en `package.json`).
 
-Pruebas E2E ubicadas en `cypress/e2e/`:
-- `login.spec.ts`
--`problem-creation.spec.ts`
--`contest-management.spec.ts`
-- Y más...
+### Dependencias del sistema en Linux (Ubuntu / Debian)
+
+Lista oficial: [dependencias requeridas](https://on.cypress.io/required-dependencies).
+
+Paquetes habituales:
+
+```bash
+sudo apt update
+sudo apt install -y libatk1.0-0 libatk-bridge2.0-0 libgdk-pixbuf2.0-0 libgtk-3-0 libgbm-dev libnss3 libxss-dev
+```
+
+**Errores `libnss3.so` / NSS** — instale `libnss3` o `libnss3-dev` según la distribución.
+
+**Errores `libasound.so.2`**:
+
+```bash
+sudo apt-get install libasound2
+```
+
+En **Ubuntu 24.04+** el paquete puede llamarse:
+
+```bash
+sudo apt install libasound2t64
+```
+
+Si el error persiste, ejecute `sudo apt update` y vuelva a intentar; compare la versión en el mensaje con la ruta bajo `~/.cache/Cypress/<versión>/`.
+
+### Estructura y escritura de pruebas
+
+- Especificaciones: `cypress/e2e/`, patrón `*.cy.ts` (se permiten subcarpetas).
+- Comandos personalizados: `cypress/support/commands.js` (y tipos en `cypress/support/cypress.d.ts`).
+- Handlers globales / `uncaught:exception`: `cypress/support/e2e.ts`.
+- [Comandos personalizados](https://docs.cypress.io/api/cypress-api/custom-commands) y [eventos](https://docs.cypress.io/api/events/catalog-of-events) de Cypress.
+- **Cypress Studio** puede grabar interacciones en un spec: [Cypress Studio](https://docs.cypress.io/guides/core-concepts/cypress-studio).
+
+En este repositorio se usan plugins como **cypress-wait-until** y **cypress-file-upload** (ver `package.json`).
+
+### Depurar fallos en CI
+
+Si en GitHub Actions falla y en local pasa, abra la pestaña **Checks** del PR → **CI** y descargue artefactos `cypress-screenshots-<intento>` y `cypress-videos-<intento>` (el número de intento aparece en la URL del workflow, p. ej. `/attempts/3`).
 
 ## Pruebas de Python
 
@@ -132,4 +170,4 @@ Centrarse en:
 
 - **[Pautas de codificación](coding-guidelines.md)** - Estándares de código
 - **[Comandos útiles](useful-commands.md)** - Comandos de prueba
-- **[Guía de Cypress](../../../frontend/www/docs/How-to-use-Cypress-in-omegaUp.md)** - Guía detallada de Cypress
+- **[Configuración de desarrollo](../getting-started/development-setup.md)** — Node, Yarn y Docker antes de ejecutar Cypress

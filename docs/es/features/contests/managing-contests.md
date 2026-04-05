@@ -64,8 +64,19 @@ Añade problemas a tu concurso:
 - **Freeze**: congela el marcador antes de que termine el concurso.
 - **Actualizar**: actualizaciones en tiempo real a través de WebSocket
 
+## Concurso en una escuela (red y laboratorio)
+
+Permita **HTTPS (443)** hacia omegaUp y servicios relacionados desde las PCs de los concursantes.
+
+- **`https://omegaup.com`** — modo normal.
+- **`https://arena.omegaup.com`** — solo si usa **modo lockdown**; en ese caso bloquee el dominio normal para que no se pueda eludir.
+- **`https://ssl.google-analytics.com`** — uso del sitio. Opcional: Gravatar, Google OAuth.
+
+Evite reglas de firewall que **descarten** paquetes sin respuesta (**DROP**) para dominios necesarios: el navegador puede esperar ~20–30 s por conexión. **Lockdown** restringe práctica, código de envíos previos, etc.; si lo necesita, no use lockdown.
+
+Los envíos se califican en **Linux**; código solo Windows puede fallar. Eventos grandes (100+): contacte **hello@omegaup.com** con antelación.
+
 ## Documentación relacionada
 
-- **[API de concursos](../../api/contests.md)** - Puntos finales de API
-- **[Arena](../arena.md)** - Interfaz del concurso
-- **[Concursos en ejecución](../../../frontend/www/docs/Run-a-contest-at-your-school.md)** - Guía del usuario
+- **[API de concursos](../../api/contests.md)** — Endpoints
+- **[Arena](../arena.md)** — Interfaz del concurso

@@ -1,77 +1,73 @@
 ---
 title: Formato do problema
-description: Estrutura de arquivo ZIP para criação manual de problemas
+description: Estrutura ZIP para criação manual de problemas
 icon: bootstrap/file-document
 ---
-# Formato do problema
 
-Para criação avançada de problemas, você pode criar manualmente um arquivo `.zip` com a estrutura adequada.
+# Formato do problema (ZIP manual)
 
-## Estrutura do arquivo ZIP
+Para a maioria dos autores, o [Problem Creator](https://omegaup.com/problem/creator) (CDP) ou o editor no site basta. Esta página é para empacotar **manualmente** um `.zip` quando você precisa de controle total (por exemplo **Karel**, tarefas **interativas** ou **validadores personalizados**).
+
+!!! dica "Vídeos"
+    ZIP manual: [parte 1](https://www.youtube.com/watch?v=LfyRSsgrvNc), [parte 2](https://www.youtube.com/watch?v=i2aqXXOW5ic). CDP: [YouTube](https://www.youtube.com/watch?v=cUUP9DqQ1Vg).
+
+## Layout do ZIP (resumo)
+
+Use **`.zip`** (não RAR/7z). O nome do arquivo é arbitrário.
 
 ```
 problem.zip
-├── statements/
-│   ├── es.markdown      # Spanish statement
-│   ├── en.markdown      # English statement
-│   └── pt.markdown      # Portuguese statement
 ├── cases/
-│   ├── 01.in
-│   ├── 01.out
-│   ├── 02.in
-│   ├── 02.out
-│   └── ...
-├── validator.cpp         # Optional: Custom validator
-├── limits.json           # Optional: Custom limits
-└── testplan              # Optional: Test case weights
-```
-## Formato da declaração
-
-As declarações são escritas em Markdown:
-
-```markdown
-# Problem Title
-
-## Description
-
-Problem description here...
-
-## Input
-
-Input format description...
-
-## Output
-
-Output format description...
-
-## Examples
-
-### Example 1
-
-**Input:**
-```
-1 2
+├── statements/
+├── solutions/
+├── interactive/
+├── validator.cpp
+├── settings.json
+├── limits.json
+└── testplan
 ```
 
-**Output:**
-```
-3
-```
-```
-## Casos de teste
+Referência no repositório: [`frontend/tests/resources/testproblem.zip`](https://github.com/omegaup/omegaup/blob/main/frontend/tests/resources/testproblem.zip).
 
-Os casos de teste são pares de arquivos `.in` e `.out`:
+## O que se configura
 
--`01.in`, `01.out`
--`02.in`, `02.out`
--`03.in`, `03.out`
-- ...
+| Área | Significado |
+|------|-------------|
+| **Tipo de validador** | token, sem maiúsculas, tolerância numérica, “stdout como pontuação” (interativo) ou **custom** `validator.<lang>` |
+| **Linguagens** | Modos: linguagens normais, **Karel**, **somente saída** (`.zip` de respostas; caso único pode ser `Main.in`/`Main.out`), **sem envios** |
+| **Limites** | Tempo CPU, tempo total, validador, memória (KiB), tamanho de saída |
+| **Limite de código** | Tamanho máximo do fonte |
+| **Público / tags / fonte** | Visibilidade e atribuição |
 
-## Validador
+## `cases/`
 
-Se estiver usando um validador personalizado, inclua o código-fonte (por exemplo, `validator.cpp`).
+- Pares **`.in`** / **`.out`** com o mesmo prefixo.
+- **Agrupamento**: ponto no nome, ex. `grupo1.casoa.in`.
+- ZIPs muito grandes deixam o julgamento lento.
 
-## Documentação Relacionada
+## `statements/`
 
-- **[Criando Problemas](creating-problems.md)** - Guia de criação de problemas
-- **[Guia ZIP manual](../../../frontend/www/docs/Manual-for-Zip-File-Creation-for-Problems.md)** - Especificação detalhada do formato
+- Markdown por idioma. Pré-visualização: [omegaup.com/redaccion.php](https://omegaup.com/redaccion.php).
+
+## `solutions/`
+
+Opcional. Exemplos em [`frontend/tests/resources`](https://github.com/omegaup/omegaup/tree/main/frontend/tests/resources).
+
+## `interactive/` e libinteractive
+
+[libinteractive](https://omegaup.com/libinteractive/). Exemplo: [Cave (IOI 2013)](https://omegaup.com/resources/cave.zip).
+
+## Validador customizado (`validator.<lang>`)
+
+Um arquivo na raiz entre `validator.c`, `validator.cpp`, `validator.java`, `validator.p`, `validator.py`. Deve imprimir float em **[0, 1]**; vazio → **JE**.
+
+Manual longo: [`Manual-for-Zip-File-Creation-for-Problems.md`](https://github.com/omegaup/omegaup/blob/main/frontend/www/docs/Manual-for-Zip-File-Creation-for-Problems.md).
+
+## `testplan`
+
+Pesos por grupo ou repartição uniforme; ver `testproblem.zip`.
+
+## Documentação relacionada
+
+- **[Criar problemas](creating-problems.md)**
+- **[Veredictos](../verdicts.md)**

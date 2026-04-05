@@ -37,7 +37,7 @@ sequenceDiagram
 Cuando se realiza una presentación:
 
 1. Código, alias del concurso, problema e idioma enviados mediante HTTP POST a `/api/run/create/`
-2. Nginx reenvía a PHP (HHVM)
+2. Nginx reenvía la petición a **PHP** (PHP-FPM en despliegues típicos; el punto de entrada carga `frontend/server/bootstrap.php`)
 3. `bootstrap.php` carga la configuración e inicializa la base de datos.
 4. Objeto `Request` creado con parámetros
 5. URL tokenizada: `/api/run/create/` → `['run', 'create']`
@@ -55,6 +55,7 @@ El controlador:
    - El tiempo límite del concurso no ha expirado.
    - Límite de tasa de envío (60 segundos por problema)
    - Visibilidad del concurso (público o usuario listado)
+   - **Modo lockdown** (si está activo): comprobaciones adicionales; por ejemplo, impedir envíos que cuenten como **modo práctica** durante una ventana de concurso restringida
 4. Calcula la penalización según la política del concurso.
 5. Genera GUID aleatorio
 6. Almacena el envío en la base de datos.

@@ -56,12 +56,32 @@ Se você é novo no omegaUp, recomendamos:
 
 ## Visão geral do ambiente de desenvolvimento
 
-omegaUp usa Docker para desenvolvimento local. Os principais componentes incluem:
+omegaUp usa Docker para desenvolvimento local:
 
-- **Frontend**: PHP + MySQL (arquitetura MVC)
-- **Backend**: sistema de niveladora e corredor baseado em Go
-- **IU de front-end**: Vue.js + TypeScript + Bootstrap 4
-- **Banco de dados**: MySQL 8.0.39
+- **Web + API**: PHP e MySQL (MVC, APIs JSON)
+- **Juiz**: Go (grader/runner) e sandbox minijail
+- **UI**: Vue.js, TypeScript, Bootstrap 4
+- **Problemas**: gitserver e ZIP — ver [Problemas](../features/problems/index.md)
+
+### Caminhos no repositório
+
+| Área | Caminho |
+|------|---------|
+| API | `frontend/server/src/Controllers/` |
+| DAO | `frontend/server/src/DAO/` |
+| Migrações | `frontend/database/` |
+| Vue/TS | `frontend/www/js/` |
+| Testes PHPUnit | `frontend/tests/controllers/` |
+| Cypress | `cypress/e2e/` |
+
+### Leituras
+
+- [omegaUp (IOI Journal, 2014)](http://www.ioinformatics.org/oi/pdf/v8_2014_169_178.pdf)
+- [libinteractive](https://ioinformatics.org/journal/v9_2015_3_14.pdf)
+
+## Navegadores
+
+Use um navegador **atual** (Chrome, Firefox, Safari, Edge). Apenas **HTTPS**; IE antigo não é suportado.
 
 ## Contas de Desenvolvimento
 
@@ -83,7 +103,7 @@ Ao configurar seu ambiente local, você terá acesso a duas contas pré-configur
 
 - **Site**: [omegaup.com](https://omegaup.com)
 - **GitHub**: [github.com/omegaup/omegaup](https://github.com/omegaup/omegaup)
-- **Discord**: [Junte-se ao nosso servidor Discord](https://discord.com/invite/K3JFd9d3wk) para suporte da comunidade
+- **Discord**: [Junte-se ao nosso servidor Discord](https://discord.gg/gMEMX7Mrwe) para suporte da comunidade
 - **Problemas**: [Relatar bugs ou solicitar recursos](https://github.com/omegaup/omegaup/issues)
 
 ---

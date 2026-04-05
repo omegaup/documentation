@@ -9,12 +9,10 @@ allowing language switching to work correctly during local development.
 import http.server
 import re
 import socketserver
-import os
 import sys
 from pathlib import Path
 
-# Change to the site directory
-ROOT = Path(__file__).parent
+ROOT = Path(__file__).parent.resolve()
 SITE_DIR = ROOT / "site"
 
 
@@ -50,13 +48,20 @@ if not SITE_DIR.exists():
 
 _warn_if_favicon_href_mismatch()
 
-os.chdir(SITE_DIR)
-
 PORT = 8000
 
+
 class MultiLangHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
-    """Custom handler that redirects root to /en/"""
-    
+    """Serves site/ by absolute path so rebuilds (rmtree site/) do not break os.getcwd()."""
+
+    def __init__(self, request, client_address, server):
+        super().__init__(
+            request,
+            client_address,
+            server,
+            directory=str(SITE_DIR.resolve()),
+        )
+
     def do_GET(self):
         # Redirect root to /en/
         if self.path == "/" or self.path == "":

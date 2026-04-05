@@ -117,7 +117,7 @@ flowchart TD
 Cuando un usuario envía código, esto es lo que sucede:
 
 1. **Frontend** envía HTTP POST a `/api/run/create/`
-2. **Nginx** reenvía la solicitud a PHP (HHVM)
+2. **Nginx** reenvía la solicitud a **PHP** (PHP-FPM en despliegues típicos)
 3. **Bootstrap** carga la configuración e inicializa la base de datos.
 4. **El controlador** (`RunController::apiCreate`) procesa la solicitud
 5. **Autenticación** valida el token del usuario

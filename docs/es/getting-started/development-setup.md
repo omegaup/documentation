@@ -74,6 +74,9 @@ docker compose up --no-build
 ```
 La bandera `--no-build` evita reconstruir todo, acelerando significativamente el inicio.
 
+!!! nota "`docker compose` frente a `docker-compose`"
+    Docker Compose V2 usa el comando `docker compose` (con espacio). Instalaciones antiguas pueden tener el binario `docker-compose`; ambos sirven si tu Docker lo soporta. Esta guía usa `docker compose`.
+
 ## Paso 3: acceda a su instancia local
 
 Una vez que los contenedores se estén ejecutando, acceda a su instancia local de omegaUp en:
@@ -173,7 +176,58 @@ omegaup/
 │   ├── database/               # Database migrations
 │   └── tests/                  # Test files
 ```
-Para obtener más detalles, consulte la [Descripción general de la arquitectura](../architecture/index.md).
+Para más detalle, consulte la [Descripción general de la arquitectura](../architecture/index.md) y la [arquitectura de frontend](../architecture/frontend.md).
+
+El flujo de contribución (ramas, PR, remotos) está en [Contribuyendo](contributing.md).
+
+## Visual Studio Code con Docker
+
+Puede editar desde el anfitrión con [Visual Studio Code](https://code.visualstudio.com/) mientras Docker ejecuta el stack.
+
+### Extensiones recomendadas
+
+- [Dev Containers](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) o [Docker](https://marketplace.visualstudio.com/items?itemName=ms-azuretools.vscode-docker) para adjuntarse a un contenedor en ejecución
+- Extensiones PHP, Vue y ESLint según los archivos que modifique
+
+### Adjuntarse al contenedor frontend
+
+1. Inicie el entorno: `docker compose up --no-build` (o `docker compose up` la primera vez).
+2. En VS Code, use **Attach to Running Container** y elija el contenedor del frontend (a menudo `omegaup-frontend-1`; el nombre exacto aparece en `docker compose ps`).
+3. En la ventana adjunta, abra la carpeta **`/opt/omegaup`** (el proyecto montado dentro del contenedor).
+
+También puede editar el clon en el anfitrión: el mismo árbol se monta en `/opt/omegaup` y webpack dentro del contenedor recoge los cambios.
+
+!!! consejo "Flujo heredado con Vagrant / SSH"
+    Si usa una VM con [omegaup/deploy](https://github.com/omegaup/deploy), puede usar **Remote - SSH** con la salida de `vagrant ssh-config`, como en la [documentación de VS Code Remote SSH](https://code.visualstudio.com/docs/remote/ssh). Para nuevos colaboradores, prefiera Docker cuando sea posible.
+
+## GitHub OAuth (inicio de sesión local con GitHub)
+
+### 1. Crear la OAuth App en GitHub
+
+1. Abra [Configuración para desarrolladores de GitHub](https://github.com/settings/developers).
+2. **OAuth Apps → New OAuth App**.
+3. Indique:
+   - **Homepage URL**: `http://localhost:8001/`
+   - **Authorization callback URL**: `http://localhost:8001/login?third_party_login=github`
+4. Registre la aplicación y copie el **Client ID** y el **Client Secret**.
+
+### 2. Configurar omegaUp
+
+1. Cree o edite **`frontend/server/config.php`** (solo local; no suba secretos a git).
+2. Añada:
+
+```php
+<?php
+define('OMEGAUP_GITHUB_CLIENT_ID', 'your_real_client_id_here');
+define('OMEGAUP_GITHUB_CLIENT_SECRET', 'your_real_client_secret_here');
+```
+
+3. Si el botón sigue desactivado, reinicie el contenedor frontend una vez.
+
+!!! fracaso "Nunca suba secretos OAuth"
+    No confíe `config.php` con credenciales. No edite `config.default.php` para secretos. Guarde ID y secreto fuera del repositorio.
+
+Véase también [Seguridad → integración OAuth](../architecture/security.md#oauth-integration).
 
 ## Problemas comunes
 
@@ -217,7 +271,34 @@ ln -sf ~/.mysql.docker.cnf .my.cnf
 ```
 ### Error de conexión MySQL
 
-Si MySQL está instalado pero obtiene errores de conexión, asegúrese de que el archivo de configuración anterior esté configurado correctamente.
+Si MySQL está instalado pero aparece un error de socket local, los hooks que se ejecutan en `git push` esperan un cliente **TCP** hacia el puerto Docker **13306**. Use el bloque `~/.mysql.docker.cnf` y el enlace `.my.cnf` descritos en [Contribuyendo → Configuraciones adicionales](contributing.md).
+
+### Submódulos Git / JS de terceros
+
+Si faltan módulos bajo `frontend/www/third_party/js/`:
+
+```bash
+git submodule update --init --recursive
+```
+
+### Reconstruir la imagen frontend
+
+Tras cambios grandes de dependencias:
+
+```bash
+docker compose build frontend
+docker compose up
+```
+
+### Permisos: `phpminiadmin`, `venv` o reinicios en bucle
+
+**Causa**: clon o `docker compose` como **root** o carpeta del proyecto propiedad de root.
+
+**Solución**: como usuario normal, vuelva a clonar bajo su home, pertenezca al grupo `docker` y ejecute `docker compose` **sin** `sudo`. No use `sudo git clone`.
+
+### Errores de `policy-tool` / `mysql` al hacer push
+
+Instale el cliente MySQL en el **anfitrión** y configure TCP como arriba. Para el entorno de despliegue, abra un issue en [omegaup/deploy](https://github.com/omegaup/deploy/issues).
 
 ## Próximos pasos
 
@@ -230,8 +311,8 @@ Si MySQL está instalado pero obtiene errores de conexión, asegúrese de que el
 Si encuentra problemas que no se tratan aquí:
 
 1. Consulte la [Guía para obtener ayuda](getting-help.md)
-2. Busque [problemas de GitHub] existentes (https://github.com/omegaup/deploy/issues)
-3. Pregunta en nuestro [servidor de Discord](https://discord.com/invite/K3JFd9d3wk)
+2. Busque [issues existentes en GitHub](https://github.com/omegaup/deploy/issues)
+3. Pregunte en nuestro [servidor de Discord](https://discord.gg/gMEMX7Mrwe)
 
 ---
 

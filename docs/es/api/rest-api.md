@@ -85,6 +85,10 @@ Devuelve la marca de tiempo actual de UNIX según el reloj interno del servidor.
 
 **Permisos requeridos:** Ninguno
 
+## Catálogo completo de endpoints
+
+Para una lista **exhaustiva** de métodos agrupados por controlador, consulte el **[README de Controllers](https://github.com/omegaup/omegaup/blob/main/frontend/server/src/Controllers/README.md)** generado automáticamente en el repositorio omegaUp. Las páginas aquí (`users.md`, `contests.md`, …) cubren los flujos más frecuentes; el README es la mejor referencia para un nombre concreto de `apiAlgo`.
+
 ## Limitación de velocidad
 
 Algunos puntos finales tienen límites de velocidad:

@@ -4,6 +4,9 @@ Build all language versions of the omegaUp documentation site.
 
 This script builds the documentation for all configured languages
 (English, Spanish, Portuguese, and Brazilian Portuguese).
+
+Before building, runs scripts/verify_docs_nav.py (every .md is listed in nav).
+After a successful build, runs scripts/verify_docs_rendered.py (every .md has HTML output).
 """
 
 import subprocess
@@ -11,6 +14,8 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).parent
+VERIFY_NAV = ROOT / "scripts" / "verify_docs_nav.py"
+VERIFY_RENDERED = ROOT / "scripts" / "verify_docs_rendered.py"
 CONFIG_FILES = [
     "zensical.toml",       # English
     "zensical.es.toml",    # Spanish
@@ -49,7 +54,20 @@ def run_command(cmd, description):
 def main():
     print("🌍 Building omegaUp Documentation - All Languages")
     print(f"📂 Working directory: {ROOT}")
-    
+
+    if not VERIFY_NAV.is_file():
+        print(f"❌ Missing {VERIFY_NAV.name}; cannot verify navigation coverage.")
+        return 1
+    if not run_command(
+        [PYTHON, str(VERIFY_NAV)],
+        "Verifying nav covers every markdown page (all locales)",
+    ):
+        print(
+            "\nFix orphan pages in zensical*.toml, then rebuild. "
+            "See scripts/verify_docs_nav.py for rules."
+        )
+        return 1
+
     # Clean the site directory first
     print("\n🧹 Cleaning site directory...")
     site_dir = ROOT / "site"
@@ -105,25 +123,38 @@ def main():
     index_file = ROOT / "site" / "index.html"
     index_file.write_text(redirect_html, encoding="utf-8")
     print("   Created site/index.html redirect")
-    
+
     # Summary
     print("\n" + "="*60)
     if failures:
-        print(f"⚠️  Build completed with errors")
+        print("⚠️  Build completed with errors")
         print(f"   Failed languages: {', '.join(failures)}")
         return 1
-    else:
-        print("✅ All language versions built successfully!")
-        print("\n📚 Available languages:")
-        print("   • English:              site/en/")
-        print("   • Español:              site/es/")
-        print("   • Português:            site/pt/")
-        print("   • Português (Brasil):   site/pt-BR/")
-        print("\n🚀 To serve locally, run:")
-        print("   python3 serve_multilang.py")
-        print("   or")
-        print("   cd site && python3 -m http.server 8000")
-        return 0
+
+    if not VERIFY_RENDERED.is_file():
+        print(f"❌ Missing {VERIFY_RENDERED.name}; cannot verify rendered HTML.")
+        return 1
+    if not run_command(
+        [PYTHON, str(VERIFY_RENDERED)],
+        "Verifying every markdown page produced HTML (all locales)",
+    ):
+        print(
+            "\nSome source pages are missing from site/. "
+            "See scripts/verify_docs_rendered.py."
+        )
+        return 1
+
+    print("✅ All language versions built successfully!")
+    print("\n📚 Available languages:")
+    print("   • English:              site/en/")
+    print("   • Español:              site/es/")
+    print("   • Português:            site/pt/")
+    print("   • Português (Brasil):   site/pt-BR/")
+    print("\n🚀 To serve locally, run:")
+    print("   python3 serve_multilang.py")
+    print("   or")
+    print("   cd site && python3 -m http.server 8000")
+    return 0
 
 if __name__ == "__main__":
     try:

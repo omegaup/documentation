@@ -94,6 +94,17 @@ As classes VO e DAO são geradas automaticamente a partir do esquema do banco de
 2. Execute `./stuff/update-dao.sh`
 3. As classes VO e DAO são regeneradas
 
+## Notificações de usuário (tabela `Notifications`)
+
+A UI carrega notificações pendentes da tabela **`Notifications`**. A coluna **`contents`** é JSON que define o render em [`Notification.vue`](https://github.com/omegaup/omegaup/blob/main/frontend/www/js/omegaup/components/notification/Notification.vue).
+
+Inclua pelo menos `type`; os demais campos são **payload** conforme o tipo. Tipos comuns: `badge` (campo `badge`), `demotion` (`status`, `message`), `general_notification` (`message`, `url` opcional). Para i18n use um objeto `body` com `localizationString`, `localizationParams`, `url`, `iconUrl`.
+
+Exemplo: `{ "type": "badge", "badge": "500score" }`. Referência no servidor: [`stuff/cron/assign_badges.py`](https://github.com/omegaup/omegaup/blob/main/stuff/cron/assign_badges.py).
+
+!!! dica "Dúvidas"
+    Pergunte no [Discord](https://discord.gg/gMEMX7Mrwe).
+
 ## Documentação Relacionada
 
 - **[Arquitetura de back-end](../architecture/backend.md)** - Estrutura de back-end

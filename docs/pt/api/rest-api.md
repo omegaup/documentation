@@ -85,6 +85,10 @@ Retorna o carimbo de data/hora atual do UNIX de acordo com o relógio interno do
 
 **Permissões necessárias:** Nenhuma
 
+## Catálogo completo de endpoints
+
+Para uma lista **exaustiva** de métodos agrupados por controlador, veja o **[README dos Controllers](https://github.com/omegaup/omegaup/blob/main/frontend/server/src/Controllers/README.md)** gerado automaticamente no repositório omegaUp. As páginas aqui (`users.md`, `contests.md`, …) cobrem os fluxos mais comuns; o README é a melhor referência para um nome concreto `apiAlgo`.
+
 ## Limitação de taxa
 
 Alguns endpoints têm limites de taxa:

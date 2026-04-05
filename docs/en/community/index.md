@@ -25,7 +25,8 @@ Our flagship program for student contributors:
 
 | Year | Status | Description |
 |------|--------|-------------|
-| **[GSoC 2025](gsoc/2025.md)** | Active | 6 project ideas, mentors available |
+| **[GSoC 2026](gsoc/2026.md)** | Active | Application phases, qualifier contest, project ideas |
+| **[GSoC 2025](gsoc/2025.md)** | Completed | 6 project ideas (AI assistant, editorials, courses, …) |
 | **[GSoC 2024](gsoc/2024.md)** | Completed | Problem Creator, Public Courses |
 | **[GSoC 2023](gsoc/2023.md)** | Completed | Child accounts, Cypress migration |
 

@@ -76,4 +76,5 @@ Para casos de uso avanzados, consulte [Formato del problema](problem-format.md) 
 
 - **[Formato del problema](problem-format.md)** - Estructura del archivo ZIP
 - **[API de problemas](../../api/problems.md)** - Puntos finales de API
-- **[Guía ZIP manual](../../../frontend/www/docs/Manual-for-Zip-File-Creation-for-Problems.md)** - Formato ZIP detallado
+- **[Formato de problema (ZIP)](problem-format.md)** — estructura manual del ZIP
+- **[Manual extendido en GitHub](https://github.com/omegaup/omegaup/blob/main/frontend/www/docs/Manual-for-Zip-File-Creation-for-Problems.md)**

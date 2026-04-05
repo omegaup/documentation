@@ -25,13 +25,13 @@ O Google Summer of Code é um programa global que traz estudantes desenvolvedore
 
 <div class="grid cards" markdown>
 
-- :material-rocket-launch: **[GSoC 2025](2025.md)**
+- :material-rocket-launch: **[GSoC 2026](2026.md)**
 
     ---
 
-    Programa do ano atual com 6 ideias de projetos, incluindo AI Teaching Assistant, Problem Editorial Generation e muito mais.
+    Fases de candidatura, contest qualificatório e ideias (SQL, monitoramento, Vue 3, Bootstrap 5, integração do Problem Creator e mais).
 
-    [:octicons-arrow-right-24: Ver ideias](2025.md)
+    [:octicons-arrow-right-24: Ver 2026](2026.md)
 
 </div>
 
@@ -39,6 +39,7 @@ O Google Summer of Code é um programa global que traz estudantes desenvolvedore
 
 | Ano | Projetos | Destaques |
 |------|----------|-----------|
+| **[2025](2025.md)** | 6 | Assistente de IA, editoriais, registro em cursos e mais |
 | **[2024](2024.md)** | 2 | Migração do Problem Creator para Vue.js, Cursos Públicos no GitHub |
 | **[2023](2023.md)** | 2 | Contas infantis em conformidade com COPPA, migração de teste Cypress |
 
@@ -57,7 +58,7 @@ flowchart LR
 ```
 ### 1. Explore ideias de projetos
 
-Revise as [ideias de projetos](2025.md) do ano atual para encontrar algo de seu interesse. Você também pode propor suas próprias ideias!
+Revise as [ideias de projetos](2026.md) do ano atual para encontrar algo de seu interesse. Você também pode propor suas próprias ideias!
 
 ### 2. Junte-se à nossa comunidade
 

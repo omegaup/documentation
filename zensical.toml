@@ -9,6 +9,7 @@ copyright = "Copyright &copy; 2025 omegaUp"
 docs_dir = "docs/en"
 use_directory_urls = true
 extra_css = ["stylesheets/omegaup-theme.css"]
+extra_javascript = ["javascripts/docs-layout-fix.js"]
 
 [project.theme]
 name = "material"
@@ -25,6 +26,7 @@ features = [
     "navigation.tabs",
     "navigation.sections",
     "navigation.expand",
+    "navigation.indexes",
     "navigation.top",
     "search.suggest",
     "search.highlight",
@@ -97,6 +99,15 @@ custom_fences = [
     { "Realtime Updates" = "features/realtime.md" },
     { "Verdicts" = "features/verdicts.md" },
     { "Badges" = "features/badges.md" },
+    { "Contests" = [
+        { "Overview" = "features/contests/" },
+        { "Managing contests" = "features/contests/managing-contests.md" },
+    ]},
+    { "Problems" = [
+        { "Overview" = "features/problems/" },
+        { "Problem format" = "features/problems/problem-format.md" },
+        { "Creating problems" = "features/problems/creating-problems.md" },
+    ]},
 ]
 
 [[project.nav]]
@@ -108,6 +119,7 @@ custom_fences = [
     { "Database Patterns" = "development/database-patterns.md" },
     { "Migration Guide" = "development/migration-guide.md" },
     { "Useful Commands" = "development/useful-commands.md" },
+    { "GSoC page generation" = "development/gsoc-data-generation.md" },
 ]
 
 [[project.nav]]
@@ -144,6 +156,13 @@ custom_fences = [
 [[project.nav]]
 "Community" = [
     { "Overview" = "community/" },
+    { "Google Summer of Code" = [
+        { "Overview" = "community/gsoc/" },
+        { "GSoC 2026" = "community/gsoc/2026.md" },
+        { "GSoC 2025" = "community/gsoc/2025.md" },
+        { "GSoC 2024" = "community/gsoc/2024.md" },
+        { "GSoC 2023" = "community/gsoc/2023.md" },
+    ]},
     { "Recruitment" = "community/recruitment.md" },
 ]
 

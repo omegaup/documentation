@@ -119,7 +119,7 @@ flowchart TD
 When a user submits code, here's what happens:
 
 1. **Frontend** sends HTTP POST to `/api/run/create/`
-2. **Nginx** forwards request to PHP (HHVM)
+2. **Nginx** forwards the request to **PHP** (PHP-FPM in typical setups)
 3. **Bootstrap** loads configuration and initializes database
 4. **Controller** (`RunController::apiCreate`) processes request
 5. **Authentication** validates user token

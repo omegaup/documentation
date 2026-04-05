@@ -115,6 +115,7 @@ Third-party authentication via:
 
 - **Google**: OAuth 2.0 with ID token verification
 - **Facebook**: OAuth 2.0 with access token
+- **GitHub** (optional in production; common in **local dev**): configure `OMEGAUP_GITHUB_CLIENT_ID` / `OMEGAUP_GITHUB_CLIENT_SECRET` in `frontend/server/config.php` — see the **GitHub OAuth** section in [Development setup](../../getting-started/development-setup.md)
 
 ```mermaid
 sequenceDiagram

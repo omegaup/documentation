@@ -56,12 +56,33 @@ Si eres nuevo en omegaUp, te recomendamos:
 
 ## Descripción general del entorno de desarrollo
 
-omegaUp utiliza Docker para el desarrollo local. Los componentes principales incluyen:
+omegaUp utiliza Docker para el desarrollo local:
 
-- **Frontend**: PHP + MySQL (arquitectura MVC)
-- **Backend**: sistema de clasificación y ejecución basado en Go
-- **Interfaz de usuario**: Vue.js + TypeScript + Bootstrap 4
-- **Base de datos**: MySQL 8.0.39
+- **Web + API**: PHP y MySQL (MVC, APIs JSON)
+- **Juez**: Go (grader/runner) y sandbox minijail
+- **UI**: Vue.js, TypeScript, Bootstrap 4 (migración desde plantillas heredadas)
+- **Problemas**: gitserver y formato ZIP — ver [Problemas](../features/problems/index.md)
+
+### Rutas útiles en el repositorio
+
+| Área | Ruta |
+|------|------|
+| API / reglas | `frontend/server/src/Controllers/` |
+| Acceso a datos | `frontend/server/src/DAO/` |
+| Migraciones | `frontend/database/` |
+| Vue/TS | `frontend/www/js/` |
+| Plantillas / i18n | `frontend/templates/` |
+| Tests PHPUnit | `frontend/tests/controllers/` |
+| Cypress | `cypress/e2e/` |
+
+### Lecturas (arquitectura)
+
+- [omegaUp en IOI Journal (2014)](http://www.ioinformatics.org/oi/pdf/v8_2014_169_178.pdf)
+- [libinteractive](https://ioinformatics.org/journal/v9_2015_3_14.pdf)
+
+## Navegadores compatibles
+
+Use un navegador **actual** (Chrome, Firefox, Safari o Edge). El sitio es **solo HTTPS**; navegadores muy antiguos no son compatibles.
 
 ## Cuentas de Desarrollo
 
@@ -83,7 +104,7 @@ Cuando configure su entorno local, tendrá acceso a dos cuentas preconfiguradas:
 
 - **Sitio web**: [omegaup.com](https://omegaup.com)
 - **GitHub**: [github.com/omegaup/omegaup](https://github.com/omegaup/omegaup)
-- **Discord**: [Únase a nuestro servidor de Discord](https://discord.com/invite/K3JFd9d3wk) para obtener apoyo de la comunidad
+- **Discord**: [Únase a nuestro servidor de Discord](https://discord.gg/gMEMX7Mrwe) para obtener apoyo de la comunidad
 - **Problemas**: [Informar errores o solicitar funciones](https://github.com/omegaup/omegaup/issues)
 
 ---

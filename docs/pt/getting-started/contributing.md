@@ -41,73 +41,104 @@ Antes de começar:
 !!! falha "PR falhará sem atribuição de problemas"
     Se o seu PR não estiver vinculado a um problema atribuído, as verificações automatizadas falharão e o seu PR não poderá ser mesclado.
 
+### Atribuição automática (bot)
+
+Este repositório usa [`takanome-dev/assign-issue-action`](https://github.com/takanome-dev/assign-issue-action) para que você possa reivindicar trabalho sem depender sempre de uma atribuição manual.
+
+**Comandos** (comente na issue do GitHub):
+
+- `/assign` — atribui a issue a você.
+- `/unassign` — remove a sua atribuição.
+
+O bot também pode sugerir atribuição quando o seu comentário mostra interesse.
+
+**Limites e prazos**
+
+- No máximo **5** issues atribuídas a você ao mesmo tempo (em todo o repositório).
+- Depois da atribuição, você deve **abrir um pull request** (um PR **rascunho** conta) em até **7 dias**.
+- Por volta da metade desse prazo (~3,5 dias) é publicado um lembrete.
+- Se não houver PR no dia 7, você é **desatribuído automaticamente** e **não poderá voltar a autoatribuir** nessa issue; peça a um mantenedor se ainda precisar dela.
+
+**Autores de issue experientes**
+
+- Se **você criou a issue** e tem pelo menos **10 PRs mesclados** neste repositório, pode autoatribuir **sem** contar no limite de 5 para issues **que você abriu**.
+- A regra dos **7 dias** (abrir PR após atribuição) continua valendo.
+- Em issues **criadas por outras pessoas**, o limite usual de **5** atribuições ativas aplica-se.
+
+**Dicas**
+
+- Escreva `/assign` e abra cedo um rascunho de PR para não perder a atribuição.
+- Use `/unassign` se não puder continuar.
+- Se precisar de mais tempo, peça a um mantenedor o rótulo **`📌 Pinned`** na issue.
+
 ## Configurando seu fork e controles remotos
 
-Você só precisa fazer isso uma vez:
+Você só precisa fazer isso uma vez. Os nomes seguem o **fluxo habitual de fork no GitHub**:
+
+- **`origin`** — o seu fork (`https://github.com/YOURUSERNAME/omegaup.git`): onde você faz **push** de branches e de onde abre pull requests.
+- **`upstream`** — o repositório canónico (`https://github.com/omegaup/omegaup.git`): de onde você **puxa** as alterações oficiais.
+
+Algumas páginas antigas da wiki do omegaUp invertiam esses nomes; neste site de documentação usamos a convenção acima.
 
 ### 1. Bifurque o repositório
 
 Visite [github.com/omegaup/omegaup](https://github.com/omegaup/omegaup) e clique no botão "Fork".
 
-### 2. Clone seu garfo
+### 2. Clone seu fork
 
 ```bash
 git clone https://github.com/YOURUSERNAME/omegaup.git
 cd omegaup
 ```
-### 3. Configurar controles remotos
 
-Verifique seus controles remotos atuais:
+### 3. Adicione `upstream` e verifique os remotos
+
+O clone já tem **`origin`** apontando para o seu fork. Adicione **`upstream`** uma vez:
 
 ```bash
+git remote add upstream https://github.com/omegaup/omegaup.git
 git remote -v
 ```
-Você deverá ver algo como:
+
+Você deverá ver:
 
 ```
-origin        https://github.com/YOURUSERNAME/omegaup.git (fetch)
-origin        https://github.com/YOURUSERNAME/omegaup.git (push)
+origin     https://github.com/YOURUSERNAME/omegaup.git (fetch)
+origin     https://github.com/YOURUSERNAME/omegaup.git (push)
+upstream   https://github.com/omegaup/omegaup.git (fetch)
+upstream   https://github.com/omegaup/omegaup.git (push)
 ```
-Caso contrário, adicione o repositório omegaUp como `origin`:
+
+Se `origin` estiver errado, corrija com:
 
 ```bash
-git remote add origin https://github.com/omegaup/omegaup.git
+git remote set-url origin https://github.com/YOURUSERNAME/omegaup.git
 ```
-Em seguida, adicione seu fork como `upstream`:
 
-```bash
-git remote add upstream https://github.com/YOURUSERNAME/omegaup.git
-```
-Sua configuração final deverá ficar assim:
-
-```
-origin	https://github.com/omegaup/omegaup.git (fetch)
-origin	https://github.com/omegaup/omegaup.git (push)
-upstream	https://github.com/YOURUSERNAME/omegaup.git (fetch)
-upstream	https://github.com/YOURUSERNAME/omegaup.git (push)
-```
 ## Atualizando sua filial principal
 
-Mantenha seu branch `main` sincronizado com o `main` do omegaUp:
+Mantenha o seu `main` local e o `main` do **seu fork** alinhados com o `main` do **omegaUp**:
 
 ```bash
-git checkout main              # Switch to main branch
-git fetch origin               # Fetch latest changes
-git pull --rebase origin main  # Sync with omegaUp/main
-git push upstream              # Update your fork
+git checkout main
+git fetch upstream
+git pull --rebase upstream main
+git push origin main
 ```
-!!! aviso "Aviso de envio forçado"
-    Se `git push upstream` falhar, significa que você fez alterações diretamente em `main`. Use `git push upstream -f` para forçar o envio, mas evite fazer alterações em `main` no futuro.
+
+!!! aviso "Se o push para main falhar"
+    Se `git push origin main` falhar porque você fez commits diretamente em `main`, peça ajuda para limpar a branch ou use `git push origin main --force-with-lease` só se entender o risco. Em geral, **não faça commits em `main`**; use uma branch de trabalho.
 
 ## Iniciando uma nova mudança
 
 ### 1. Crie uma ramificação de recursos
 
-Crie uma nova ramificação de `origin/main`:
+Crie uma branch a partir do último `main` oficial:
 
 ```bash
-git checkout -b feature-name origin/main
-git push upstream feature-name
+git fetch upstream
+git checkout -b feature-name upstream/main
+git push -u origin feature-name
 ```
 !!! dica "Nomeação de filiais"
     Use nomes de ramificação descritivos como `fix-login-bug` ou `add-dark-mode-toggle`.
@@ -155,9 +186,9 @@ git config --global user.name "Your Name"
 ### 1. Envie suas alterações
 
 ```bash
-git push -u upstream feature-name
+git push -u origin feature-name
 ```
-O sinalizador `-u` configura o rastreamento entre sua filial local e a filial remota.
+O sinalizador `-u` configura o rastreamento entre sua filial local e **`origin`** (o seu fork).
 
 ### 2. Solicitação pull aberta no GitHub
 
@@ -230,16 +261,52 @@ git branch -D feature-name
 Ou use Git:
 
 ```bash
-git push upstream --delete feature-name
+git push origin --delete feature-name
 ```
 ### Limpar referências remotas
 
-Remova referências de ramificação remota obsoletas:
+Remova referências de rastreamento obsoletas (por exemplo, após apagar uma branch no GitHub):
 
 ```bash
-git remote prune upstream --dry-run  # Preview what will be removed
-git remote prune upstream             # Actually remove them
+git remote prune origin --dry-run  # Pré-visualização
+git remote prune origin             # Aplicar
 ```
+
+## Corrigir um pull request (commits ou histórico)
+
+Se você já fez push e precisa **esmagar**, **remover** ou **editar** commits recentes, use rebase interativo e depois push com segurança:
+
+### Squash ou fixup dos últimos `n` commits
+
+```bash
+git rebase -i HEAD~n
+```
+
+Substitua `n` pelo número de commits. No editor, mantenha o primeiro como `pick` e altere os demais para `fixup` (ou `f`). Salve e feche.
+
+Prefira **`--force-with-lease`**:
+
+```bash
+git push --force-with-lease
+```
+
+### Alterar só a mensagem do último commit
+
+Se o commit problemático é o **último** e ainda **não** foi enviado:
+
+```bash
+git commit --amend
+```
+
+Se já foi enviado:
+
+```bash
+git commit --amend
+git push --force-with-lease
+```
+
+!!! aviso "Reescrever histórico público"
+    Reescreva histórico apenas na **sua** branch de trabalho. Nunca faça force-push para o `main` do repositório canónico.
 ## Configurações adicionais
 
 ### Configuração de localidade
@@ -281,7 +348,7 @@ ln -sf ~/.mysql.docker.cnf .my.cnf
 
 - Revise a [Visão geral da arquitetura](../architecture/index.md) para entender a base de código
 - Confira [Guias de desenvolvimento](../development/index.md) para guias detalhados
-- Junte-se ao nosso [servidor Discord](https://discord.com/invite/K3JFd9d3wk) para se conectar com a comunidade
+- Junte-se ao nosso [servidor Discord](https://discord.gg/gMEMX7Mrwe) para se conectar com a comunidade
 
 ---
 

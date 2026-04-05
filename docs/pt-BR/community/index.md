@@ -24,7 +24,8 @@ Nosso principal programa para estudantes contribuintes:
 
 | Ano | Estado | Descrição |
 |------|--------|---------|
-| **[GSoC 2025](gsoc/2025.md)** | Ativo | 6 ideias de projetos, mentores disponíveis |
+| **[GSoC 2026](gsoc/2026.md)** | Ativo | Fases de candidatura, contest e ideias |
+| **[GSoC 2025](gsoc/2025.md)** | Concluído | 6 ideias (IA, editoriais, cursos, …) |
 | **[GSoC 2024](gsoc/2024.md)** | Concluído | Criador de Problemas, Cursos Públicos |
 | **[GSoC 2023](gsoc/2023.md)** | Concluído | Contas infantis, migração Cypress |
 

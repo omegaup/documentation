@@ -24,9 +24,10 @@ Nuestro programa estrella para estudiantes contribuyentes:
 
 | Año | Estado | Descripción |
 |------|--------|-------------|
-| **[GSoC 2025](gsoc/2025.md)** | Activo | 6 ideas de proyectos, mentores disponibles |
+| **[GSoC 2026](gsoc/2026.md)** | Activo | Fases de solicitud, concurso e ideas de proyecto |
+| **[GSoC 2025](gsoc/2025.md)** | Completado | 6 ideas (IA, editoriales, cursos, …) |
 | **[GSoC 2024](gsoc/2024.md)** | Completado | Creador de problemas, cursos públicos |
-| **[GSoC 2023](gsoc/2023.md)** | Completado | Cuentas infantiles, migración de cipreses |
+| **[GSoC 2023](gsoc/2023.md)** | Completado | Cuentas infantiles, migración a Cypress |
 
 [:octicons-arrow-right-24: Más información sobre GSoC](gsoc/index.md)
 

@@ -64,8 +64,15 @@ Adicione problemas ao seu concurso:
 - **Congelar**: Congele o placar antes do final da competição
 - **Atualizar**: atualizações em tempo real via WebSocket
 
+## Concurso em escola (rede)
+
+Permita **HTTPS (443)** para `https://omegaup.com` (modo normal) ou `https://arena.omegaup.com` (modo **lockdown**; bloqueie o domínio normal se usar lockdown). Inclua `https://ssl.google-analytics.com`. Opcional: Gravatar, Google.
+
+Evite **DROP** silencioso que deixe o navegador esperando dezenas de segundos. Lockdown restringe prática, fonte de submissões antigas, etc.
+
+Julgamento é em **Linux**. Eventos grandes: **hello@omegaup.com**.
+
 ## Documentação Relacionada
 
-- **[API de concursos](../../api/contests.md)** - Pontos de extremidade da API
-- **[Arena](../arena.md)** - Interface do concurso
-- **[Concursos de corrida](../../../frontend/www/docs/Run-a-contest-at-your-school.md)** - Guia do usuário
+- **[API de concursos](../../api/contests.md)** — Endpoints
+- **[Arena](../arena.md)** — Interface do concurso
