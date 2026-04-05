@@ -87,6 +87,7 @@ def main():
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta http-equiv="refresh" content="0; url=./en/" />
+    <link rel="icon" href="./en/assets/images/favicon-76x76.png" type="image/png" />
     <link rel="canonical" href="./en/" />
     <title>omegaUp Documentation</title>
     <script>

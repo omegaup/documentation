@@ -16,9 +16,9 @@ palette.primary = "custom"
 palette.accent = "custom"
 palette.scheme = "default"
 language = "en"
-favicon = "assets/images/favicon.png"
-# Custom omegaUp logo (using PNG image file)
-# To use a bundled icon instead, use: [project.theme.icon] logo = "lucide/smile"
+# Same asset as frontend/www/favicon-76x76.png (Ω mark, 76×76 PNG)
+favicon = "assets/images/favicon-76x76.png"
+# PNG wordmark matches main app branding; SVG variant looks different in the header
 logo = "assets/images/omegaup.png"
 custom_dir = "overrides"
 features = [

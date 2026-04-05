@@ -157,13 +157,12 @@ jobs:
             lang = rel.split(os.sep, 1)[0]
             prefix = f"{base_path}/{lang}" if base_path else f"/{lang}"
 
-            favicon_path = f"{prefix}/assets/images/favicon.png"
-            favicon_ico_path = f"{prefix}/assets/images/favicon.ico"
+            favicon_path = f"{prefix}/assets/images/favicon-76x76.png"
             
             # Replace favicon link tags
             content = re.sub(
               r'<link[^>]*rel=["\'](?:shortcut )?icon["\'][^>]*>',
-              f'<link rel="icon" href="{favicon_ico_path}">\n    <link rel="icon" type="image/png" href="{favicon_path}">',
+              f'<link rel="icon" href="{favicon_path}" type="image/png">',
               content,
               flags=re.IGNORECASE
             )
@@ -173,7 +172,7 @@ jobs:
               # Insert before </head>
               content = re.sub(
                 r'(</head>)',
-                f'    <link rel="icon" href="{favicon_ico_path}">\n    <link rel="icon" type="image/png" href="{favicon_path}">\n\\1',
+                f'    <link rel="icon" href="{favicon_path}" type="image/png">\n\\1',
                 content,
                 flags=re.IGNORECASE
               )
@@ -200,6 +199,7 @@ jobs:
                 <meta charset="utf-8" />
                 <meta name="viewport" content="width=device-width, initial-scale=1" />
                 <meta http-equiv="refresh" content="0; url=./en/" />
+                <link rel="icon" href="./en/assets/images/favicon-76x76.png" type="image/png" />
                 <link rel="canonical" href="./en/" />
                 <title>omegaUp Documentation</title>
                 <script>

@@ -7,6 +7,7 @@ allowing language switching to work correctly during local development.
 """
 
 import http.server
+import re
 import socketserver
 import os
 import sys
@@ -16,10 +17,38 @@ from pathlib import Path
 ROOT = Path(__file__).parent
 SITE_DIR = ROOT / "site"
 
+
+def _warn_if_favicon_href_mismatch():
+    """Partial single-language rebuilds leave other site/<lang>/ trees stale (wrong favicon, assets)."""
+    hrefs = {}
+    for lang in ("en", "es", "pt", "pt-BR"):
+        idx = SITE_DIR / lang / "index.html"
+        if not idx.is_file():
+            continue
+        text = idx.read_text(encoding="utf-8", errors="replace")
+        for tag in re.finditer(r"<link\b[^>]*>", text, re.IGNORECASE):
+            t = tag.group(0)
+            if not re.search(r'rel\s*=\s*["\']icon["\']', t, re.IGNORECASE):
+                continue
+            hm = re.search(r'href\s*=\s*(["\'])([^"\']+)\1', t, re.IGNORECASE)
+            if hm:
+                hrefs[lang] = hm.group(2)
+            break
+    unique = set(hrefs.values())
+    if len(unique) > 1:
+        print(
+            "Warning: <link rel=\"icon\"> href differs between languages (stale site/ output).\n"
+            "  Run: python3 build_all.py\n"
+            f"  Seen: {hrefs}"
+        )
+
+
 if not SITE_DIR.exists():
     print(f"Error: {SITE_DIR} does not exist.")
     print("Please build the site first using: zensical build")
     sys.exit(1)
+
+_warn_if_favicon_href_mismatch()
 
 os.chdir(SITE_DIR)
 

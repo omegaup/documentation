@@ -75,7 +75,7 @@
 }
 
 /* Fix logo rendering on homepage - prevent cropping */
-.md-typeset img[alt*="omegaUp Logo"],
+.md-typeset img[alt*="Logotipo"],
 .md-typeset img[src*="omegaup.svg"],
 .md-typeset img[src*="omegaup.png"] {
   max-width: 100%;
