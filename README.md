@@ -1,247 +1,122 @@
 # omegaUp Documentation Site
 
-This is the documentation site for omegaUp, built with Zensical (Material for MkDocs).
+The source for omegaUp's contributor and architecture documentation, published at
+**[docs.omegaup.com](https://docs.omegaup.com)**. It is a static site built with
+[Zensical](https://zensical.org/) (the successor to Material for MkDocs, from the same
+team) and ships in four languages: English (`en`, the source of truth), Spanish (`es`),
+Portuguese (`pt`), and Brazilian Portuguese (`pt-BR`).
 
-## Setup Instructions
+> **New here?** Read [QUICKSTART.md](QUICKSTART.md) for the two commands that get you a
+> local preview, then come back for the details.
 
-### 1. Create a new GitHub repository
+## How this repository is organized
 
-Create a new repository on GitHub (e.g., `omegaup-docs` or `docs`). Do NOT initialize it with a README, .gitignore, or license.
+English is authored by hand; the other three languages are **generated** from it by
+`scripts/translate_docs.py`. That single rule drives the whole workflow:
 
-### 2. Add the remote and push
+- **Edit `docs/en/` only.** Never hand-edit `docs/es/`, `docs/pt/`, or `docs/pt-BR/` —
+  your changes there are overwritten on the next translation run.
+- Each language has its own `zensical.<lang>.toml` config (its `docs_dir`, `site_dir`,
+  `language`, and navigation labels). The navigation *structure* — the file paths — is
+  identical across all four; only the visible section titles are localized.
+- When you add, rename, or remove a page, update the nav in **all four** `zensical*.toml`
+  files so every language builds cleanly. `scripts/verify_docs_nav.py` (run automatically
+  by `build_all.py`) fails the build if any `.md` file is missing from its nav, and
+  `scripts/verify_docs_rendered.py` fails if any page produced no HTML.
 
-```bash
-cd docs
-git remote add origin https://github.com/YOUR_USERNAME/YOUR_REPO_NAME.git
-git branch -M main
-git push -u origin main
-```
+## Local development
 
-Replace `YOUR_USERNAME` and `YOUR_REPO_NAME` with your actual GitHub username and repository name.
+Zensical is a Python package. Everything below assumes Python 3.10+.
 
-### 3. Update site URL in zensical.toml
-
-Update the `site_url` in `zensical.toml` to match your GitHub Pages URL:
-
-```toml
-site_url = "https://YOUR_USERNAME.github.io/YOUR_REPO_NAME"
-```
-
-Or if using a custom domain:
-```toml
-site_url = "https://docs.omegaup.com"
-```
-
-### 4. Enable GitHub Pages
-
-1. Go to your repository on GitHub
-2. Navigate to **Settings** → **Pages**
-3. Under **Source**, select **GitHub Actions**
-4. The site will automatically deploy when you push to the `main` branch
-
-## Local Development
-
-This documentation site supports multiple languages (English, Spanish, Portuguese, and Brazilian Portuguese). Follow these steps to set up and run the site locally.
-
-### 1. Initial Setup
-
-#### Create and activate a virtual environment (recommended)
+### 1. Install
 
 ```bash
-# Create virtual environment
 python3 -m venv .venv
-
-# Activate virtual environment
-# On macOS/Linux:
-source .venv/bin/activate
-# On Windows:
-# .venv\Scripts\activate
-```
-
-#### Install dependencies
-
-```bash
+source .venv/bin/activate          # Windows: .venv\Scripts\activate
 pip install zensical
 ```
 
-### 2. Building the Documentation
+> If the `zensical` console command isn't on your `PATH` (e.g. a global install),
+> use `python3 -m zensical …` instead — `build_all.py` already does this for you.
 
-#### Quick Build - All Languages
-
-To build all language versions at once, use the provided build script:
+### 2. Build all languages
 
 ```bash
 python3 build_all.py
 ```
 
-This will:
-- Clean the existing `site/` directory
-- Build English (`/en/`), Spanish (`/es/`), Portuguese (`/pt/`), and Brazilian Portuguese (`/pt-BR/`) versions
-- Create a root redirect from `/` to `/en/`
+This cleans `site/`, verifies every page is in nav, builds `/en/`, `/es/`, `/pt/`, and
+`/pt-BR/`, verifies every page rendered, and writes a root redirect from `/` to `/en/`.
 
-#### Manual Build - Single Language
-
-To build only one language version:
+To build a single language while iterating:
 
 ```bash
-# English (default)
-zensical build --clean --config-file zensical.toml
-
-# Spanish
-zensical build --clean --config-file zensical.es.toml
-
-# Portuguese
-zensical build --clean --config-file zensical.pt.toml
-
-# Brazilian Portuguese
-zensical build --clean --config-file zensical.pt-BR.toml
+python3 -m zensical build --clean --config-file zensical.toml        # English
+python3 -m zensical build --clean --config-file zensical.es.toml     # Spanish
 ```
 
-### 3. Serving Locally
-
-#### Multi-Language Server (Recommended)
-
-To test language switching and view all language versions:
+### 3. Serve locally
 
 ```bash
-python3 serve_multilang.py
+python3 serve_multilang.py          # http://localhost:8000/ (redirects to /en/)
 ```
 
-Then open your browser to:
-- **Root (redirects to English):** http://localhost:8000/
-- **English:** http://localhost:8000/en/
-- **Español:** http://localhost:8000/es/
-- **Português:** http://localhost:8000/pt/
-- **Português (Brasil):** http://localhost:8000/pt-BR/
+Use this rather than `zensical serve` — the multi-language server maps `/en/`, `/es/`,
+`/pt/`, and `/pt-BR/` correctly so the language switcher works. `zensical serve` only
+knows about one language directory and 404s on the others.
 
-> **Note:** The `serve_multilang.py` script properly serves all language directories and allows language switching to work correctly.
+### 4. Regenerate translations (do this last)
 
-#### Alternative - Simple HTTP Server
+Only after the English tree is finalized and reviewed:
 
 ```bash
-cd site
-python3 -m http.server 8000
+python3 scripts/translate_docs.py                    # all languages, all files
+python3 scripts/translate_docs.py --langs pt         # one language
+python3 scripts/translate_docs.py --only getting-started   # a subset, for testing
 ```
 
-#### Single Language Only (Not Recommended for Multi-Language Testing)
-
-```bash
-# This only serves English and won't allow language switching
-zensical serve --config-file zensical.toml
-```
-
-### 4. Making Changes
-
-#### Editing Content
-
-1. Edit the Markdown files in `docs/en/` for English content
-2. Rebuild the site: `python3 build_all.py`
-3. Refresh your browser to see changes
-
-#### Translating Content
-
-To translate English content to other languages:
-
-```bash
-# Translate all files
-python3 scripts/translate_docs.py
-
-# Translate specific language only
-python3 scripts/translate_docs.py --langs pt
-
-# Translate only specific files (for testing)
-python3 scripts/translate_docs.py --only "getting-started"
-```
-
-### 5. Troubleshooting
-
-#### Issue: 404 errors when clicking language links
-
-**Cause:** Using `zensical serve` which only serves one language directory.
-
-**Solution:** Use the multi-language server instead:
-```bash
-python3 serve_multilang.py
-```
-
-#### Issue: Changes not showing up
-
-**Cause:** Browser cache or stale build.
-
-**Solution:** 
-```bash
-# Clean rebuild
-python3 build_all.py
-
-# Or manually clear cache
-rm -rf .cache site
-```
-
-#### Issue: Missing dependencies
-
-**Cause:** Zensical not installed or virtual environment not activated.
-
-**Solution:**
-```bash
-# Activate virtual environment
-source .venv/bin/activate  # macOS/Linux
-
-# Install/upgrade Zensical
-pip install --upgrade zensical
-```
-
-## Project Structure
-
-```
-docs/
-├── .github/
-│   └── workflows/
-│       └── deploy.yml          # GitHub Actions deployment workflow
-├── .venv/                      # Virtual environment (gitignored)
-├── .cache/                     # Build cache (gitignored)
-├── site/                       # Built site (gitignored)
-│   ├── en/                     # English version
-│   ├── es/                     # Spanish version
-│   ├── pt/                     # Portuguese version
-│   ├── pt-BR/                  # Brazilian Portuguese version
-│   └── index.html              # Root redirect to /en/
-├── docs/                       # Source documentation files
-│   ├── en/                     # English source (primary)
-│   ├── es/                     # Spanish translations
-│   ├── pt/                     # Portuguese translations
-│   └── pt-BR/                  # Brazilian Portuguese translations
-├── scripts/
-│   ├── translate_docs.py       # Auto-translate from English to other languages
-│   └── generate-gsoc-pages.py  # GSoC pages generator
-├── overrides/                  # Theme customizations
-├── .gitignore                  # Git ignore rules
-├── zensical.toml               # English config
-├── zensical.es.toml            # Spanish config
-├── zensical.pt.toml            # Portuguese config
-├── zensical.pt-BR.toml         # Brazilian Portuguese config
-├── build_all.py                # Build all language versions
-├── serve_multilang.py          # Multi-language development server
-└── README.md                   # This file
-```
-
-### Language-Specific Configuration
-
-Each language has its own `zensical.*.toml` configuration file that specifies:
-- `site_dir`: Where to output the built files (e.g., `site/en/`, `site/pt/`)
-- `docs_dir`: Source directory for that language (e.g., `docs/en/`, `docs/pt/`)
-- `language`: The language code for theme localization
-- `alternate`: Links to other language versions for the language switcher
+Running the translator before English is final wastes effort and creates drift, because
+it overwrites `es/pt/pt-BR` wholesale.
 
 ## Deployment
 
-The site is automatically deployed to GitHub Pages via GitHub Actions when you push to the `main` branch. The workflow:
+Pushing to `main` triggers `.github/workflows/deploy.yml`, which builds all four
+languages and publishes to GitHub Pages. The workflow is self-configuring — you do **not**
+edit `site_url` by hand for a deploy:
 
-1. Builds the site using Zensical
-2. Deploys to GitHub Pages
-3. Makes the site available at your configured URL
+- It **computes `site_url` at build time** from the repository owner/name
+  (`https://<owner>.github.io/<repo>/`, or the apex form when the repo is named after the
+  owner), rewriting every `zensical*.toml` before building. The `site_url` committed in
+  the toml files is only a placeholder for local builds.
+- It authenticates GitHub Pages with `secrets.PAGES_DEPLOY_TOKEN`, falling back to the
+  default `github.token`. The token is **required** for the `omegaup` org repository —
+  the default token can't enable Pages on an org repo.
+- After building it rewrites asset paths for the Pages base path, forces the omegaUp
+  favicon, adds `.nojekyll`, and writes the `/ → /en/` redirect.
 
-## Notes
+For a custom domain (`docs.omegaup.com`), set the CNAME in the Pages settings; the
+computed `site_url` still applies for path resolution.
 
-- The `site/` directory is gitignored as it's generated during build
-- The `.cache/` directory is gitignored as it contains build cache
-- The `.nojekyll` file will be automatically generated in the `site/` directory during build for GitHub Pages
+## Project structure
+
+```
+ou-documentation/
+├── .github/workflows/deploy.yml   # Build + GitHub Pages deploy (self-configuring)
+├── docs/
+│   ├── en/                        # English — the source of truth (edit here)
+│   ├── es/  pt/  pt-BR/           # Generated by scripts/translate_docs.py — do not edit
+│   └── <lang>/{assets,stylesheets,javascripts}/
+├── overrides/                     # Theme customizations (nav partial + custom icons)
+├── scripts/
+│   ├── translate_docs.py          # Generate es/pt/pt-BR from en
+│   ├── verify_docs_nav.py         # Fail build if a page is missing from nav
+│   ├── verify_docs_rendered.py    # Fail build if a page produced no HTML
+│   └── generate-gsoc-pages.py     # Build GSoC pages from community/gsoc/_data
+├── zensical.toml                  # English config (+ .es / .pt / .pt-BR siblings)
+├── build_all.py                   # Build every language + verify + root redirect
+├── serve_multilang.py             # Local multi-language dev server (port 8000)
+├── QUICKSTART.md                  # Fast path for new contributors
+└── README.md                      # This file
+```
+
+`site/`, `.cache/`, and `.venv/` are generated and gitignored.
