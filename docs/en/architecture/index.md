@@ -53,12 +53,13 @@ omegaUp consists of several key components:
 ### Frontend (PHP + MySQL)
 The web application layer that handles user interactions, problem and contest administration, user management, rankings, and scoreboards. Written in PHP with MySQL database.
 
-### Backend (Go)
-The evaluation subsystem responsible for compiling and executing user submissions.
+### Evaluation backend (Go)
+The subsystem responsible for compiling and executing user submissions. These are **separate Go services**, not part of the PHP monorepo: the grader, runner, and broadcaster live in [omegaup/quark](https://github.com/omegaup/quark), and the PHP application talks to the grader over HTTP (`OMEGAUP_GRADER_URL`).
 
-- **Grader**: Maintains the submission queue, dispatches to Runners, and determines verdicts
-- **Runner**: Compiles and executes programs in a secure sandbox environment
-- **Minijail**: Linux sandbox (forked from Chrome OS) for secure code execution
+- **Grader**: Maintains the submission queue, dispatches to Runners, runs the validators, and computes verdicts
+- **Runner**: Compiles and executes programs inside a secure sandbox
+- **Minijail**: the Linux sandbox (forked from Chrome OS) that isolates each execution
+- **Gitserver** ([omegaup/gitserver](https://github.com/omegaup/gitserver)): stores each problem as a git repository
 
 ## High-Level Architecture
 
@@ -107,9 +108,9 @@ flowchart TD
 | PHP | Controllers/API | 8.1.2 |
 | Python | Cronjobs | 3.10.12 |
 | TypeScript | Frontend | 4.4.4 |
-| Vue.js | Frontend Framework | 2.5.22 |
+| Vue.js | Frontend Framework | 2.7.16 |
 | Bootstrap | UI Framework | 4.6.0 |
-| Go | Grader & Runner | 20.0.1 |
+| Go | Grader / Runner / Broadcaster (external, [omegaup/quark](https://github.com/omegaup/quark)) | services v1.9.x |
 
 !!! info "Version Updates"
     Technology versions are periodically updated to keep the platform supported and secure.
@@ -121,7 +122,7 @@ When a user submits code, here's what happens:
 1. **Frontend** sends HTTP POST to `/api/run/create/`
 2. **Nginx** forwards the request to **PHP** (PHP-FPM in typical setups)
 3. **Bootstrap** loads configuration and initializes database
-4. **Controller** (`RunController::apiCreate`) processes request
+4. **Controller** (`\OmegaUp\Controllers\Run::apiCreate`) processes request
 5. **Authentication** validates user token
 6. **Validation** checks permissions, contest status, rate limits
 7. **Database** stores submission with GUID
