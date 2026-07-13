@@ -43,8 +43,8 @@ O sistema de avaliação é o coração do omegaUp, lidando com compilação, ex
 
 | Componente | Descrição | Documentação |
 |-----------|-------------|---------------|
-| **Aluno** | Gestão de filas e determinação de veredictos | [Classificadora](grader.md) |
-| **Corredor** | Compilação de código e execução em sandbox | [Corredor](runner.md) |
+| **Aluno** | Gestão de filas e determinação de veredictos | [Classificadora](../architecture/grader-internals.md) |
+| **Corredor** | Compilação de código e execução em sandbox | [Corredor](../architecture/runner-internals.md) |
 | **Caixa de areia** | Execução segura usando Minijail | [Caixa de areia](sandbox.md) |
 | **Veredictos** | Tipos de resultados e modelos de pontuação | [Veredictos](verdicts.md) |
 
@@ -101,6 +101,6 @@ flowchart LR
 
 ## Documentação Relacionada
 
-- **[Referência de API](../api/index.md)** - Endpoints de API para todos os recursos
+- **[Referência de API](../reference/api.md)** - Endpoints de API para todos os recursos
 - **[Arquitetura](../architecture/index.md)** - Detalhes da arquitetura do sistema
 - **[Guias de desenvolvimento](../development/index.md)** - Guias de implementação de recursos

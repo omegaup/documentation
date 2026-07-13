@@ -52,12 +52,13 @@ omegaUp consta de varios componentes clave:
 ### Interfaz (PHP + MySQL)
 La capa de aplicación web que maneja las interacciones de los usuarios, la administración de problemas y concursos, la gestión de usuarios, las clasificaciones y los marcadores. Escrito en PHP con base de datos MySQL.
 
-### Backend (Ir)
-El subsistema de evaluación responsable de compilar y ejecutar los envíos de los usuarios.
+### Evaluación de backend (Ir)
+El subsistema responsable de compilar y ejecutar los envíos de los usuarios. Estos son **servicios Go separados**, que no forman parte del monorepo PHP: el calificador, el corredor y el transmisor viven en [omegaup/quark](https://github.com/omegaup/quark), y la aplicación PHP se comunica con el calificador a través de HTTP (`OMEGAUP_GRADER_URL`).
 
-- **Calificador**: mantiene la cola de envío, envía a los corredores y determina los veredictos.
-- **Runner**: compila y ejecuta programas en un entorno seguro de pruebas.
-- **Minijail**: entorno limitado de Linux (bifurcado de Chrome OS) para la ejecución segura de código
+- **Calificador**: mantiene la cola de envío, envía a los corredores, ejecuta los validadores y calcula los veredictos.
+- **Runner**: compila y ejecuta programas dentro de un entorno limitado seguro
+- **Minijail**: el entorno limitado de Linux (bifurcado de Chrome OS) que aísla cada ejecución
+- **Gitserver** ([omegaup/gitserver](https://github.com/omegaup/gitserver)): almacena cada problema como un repositorio git
 
 ## Arquitectura de alto nivel
 
@@ -105,21 +106,21 @@ flowchart TD
 | PHP | Controladores/API | 8.1.2 |
 | Pitón | Trabajos cron | 3.10.12 |
 | Mecanografiado | Interfaz | 4.4.4 |
-| Vue.js | Marco de interfaz de usuario | 2.5.22 |
+| Vue.js | Marco de interfaz de usuario | 2.7.16 |
 | Arranque | Marco de interfaz de usuario | 4.6.0 |
-| Ir | Clasificador y corredor | 20.0.1 |
+| Ir | Calificador/Corredor/Locutor (externo, [omegaup/quark](https://github.com/omegaup/quark)) | servicios v1.9.x |
 
 !!! información "Actualizaciones de versión"
     Las versiones de la tecnología se actualizan periódicamente para mantener la plataforma respaldada y segura.
 
-## Flujo de solicitudes
+## Flujo de solicitud
 
 Cuando un usuario envía código, esto es lo que sucede:
 
 1. **Frontend** envía HTTP POST a `/api/run/create/`
-2. **Nginx** reenvía la solicitud a **PHP** (PHP-FPM en despliegues típicos)
+2. **Nginx** reenvía la solicitud a **PHP** (PHP-FPM en configuraciones típicas)
 3. **Bootstrap** carga la configuración e inicializa la base de datos.
-4. **El controlador** (`RunController::apiCreate`) procesa la solicitud
+4. **El controlador** (`\OmegaUp\Controllers\Run::apiCreate`) procesa la solicitud
 5. **Autenticación** valida el token del usuario
 6. **Validación** verifica permisos, estado del concurso, límites de tarifas
 7. **Base de datos** almacena el envío con GUID

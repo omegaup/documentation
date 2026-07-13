@@ -5,251 +5,81 @@ icon: bootstrap/award
 ---
 # Insignias
 
-omegaUp incluye un sistema integral de insignias para reconocer los logros, hitos y contribuciones de los usuarios a la plataforma.
+Las insignias son los pequeños logros que omegaUp otorga a los usuarios: "resolvió 100 problemas",
+"codificador del mes", "administrador del concurso". Lo que hace que sea agradable trabajar con ellos es
+que una insignia es casi enteramente **declarativa**: no se escribe código que decida quién
+lo gana, escribes una consulta SQL que *selecciona* quién se lo ganó, la colocas en una carpeta y
+omegaUp hace el resto. Implementar uno es un camino muy transitado.
 
-## Descripción general
+## Agregar una insignia, paso a paso
 
-Las insignias se otorgan automáticamente en función de consultas SQL que se ejecutan periódicamente mediante cronjobs. Cada insignia tiene su propio directorio que contiene la lógica de consulta, descripciones localizadas y casos de prueba.
+1. **Elija un alias.** Debe ser único y tener como máximo **32 caracteres**. Todo lo demás es
+   lleva su nombre.
 
-## Categorías de insignias
+2. **Crea su carpeta.** Crea un directorio en
+   [`frontend/badges/`](https://github.com/omegaup/omegaup/tree/main/frontend/badges) cuyo
+   El nombre es exactamente el alias. De aquí en adelante este es tu `badgeFolder`.
 
-### Hitos en la resolución de problemas
+3. **Agregue un ícono (opcional).** Si la insignia tiene un ícono personalizado, coloque su SVG en `badgeFolder`
+   como `icon.svg`.
 
-| Insignia | Requisito | Descripción |
-|-------|-------------|-------------|
-| **100 problemas resueltos** | Resuelve más de 100 problemas | Reconoce a los solucionadores de problemas dedicados |
-| **Puntuación 500** | Consigue una puntuación total de más de 500 | Hito de puntuación general |
+4. **Escriba la consulta de adjudicación.** Cree `badgeFolder/query.sql` que contenga un solo MySQL
+   `SELECT` que devuelve los `user_id` de cada usuario que debería recibir la insignia. esto
+   La consulta *es* la lógica de la insignia, por lo que necesita conocer la forma de los datos; mantenga la
+   [esquema de base de datos](https://github.com/omegaup/omegaup/blob/main/frontend/database/schema.sql)
+   ábralo mientras lo escribe y busque algo simple y que se pueda almacenar en caché en lugar de algo inteligente.
 
-### Insignias de racha
+5. **Agregar localizaciones.** Crear
+   [`badgeFolder/localizations.json`](https://github.com/omegaup/omegaup/blob/main/frontend/badges/legacyUser/localizations.json)
+   con el nombre y la descripción de la insignia traducidos al español (`es`), inglés (`en`) y
+   Portugués (`pt`). El nombre puede tener como máximo **50 caracteres**.
 
-| Insignia | Requisito | Descripción |
-|-------|-------------|-------------|
-| **Racha de 7 días** | Resuelve problemas 7 días consecutivos | Consistencia de una semana |
-| **Racha de 15 días** | Resuelve problemas 15 días consecutivos | Dedicación de dos semanas |
-| **Racha de 30 días** | Resuelve problemas 30 días consecutivos | Compromiso de un mes |
+6. **Cargue las localizaciones.** Ejecute `./stuff/lint.sh` para que las cadenas en `localizations.json`
+   se propagan a los archivos de mensajes correspondientes.
 
-### Insignias de experto en idiomas
+7. **Escribe la prueba.** Crea `badgeFolder/test.json`. Su campo `testType` elige cómo
+   La prueba unitaria de la insignia se ejecuta:
 
-| Insignia | Requisito | Descripción |
-|-------|-------------|-------------|
-| **Experto en C++** | Resuelve más de 10 problemas en C++ | Competencia en C++ |
-| **Experto en Java** | Resuelve más de 10 problemas en Java | Dominio de Java |
-| **Experto en Python** | Resuelve más de 10 problemas en Python | Dominio de Python |
-| **Experto en Pascal** | Resuelve más de 10 problemas en Pascal | Competencia en Pascal |
-| **Karel Experto** | Resuelve más de 10 problemas en Karel | Competencia Karel |
+    - **`"testType": "apicall"`**: cree el escenario llamando a las API del controlador para crear
+      los datos de los que depende la insignia (problemas, usuarios, concursos, tiradas,…). tu lo describe
+      con un arreglo `actions`, cuyas entradas pueden ser:
+        - `changeTime`: mueve el reloj del sistema para que puedas probar insignias dependientes del tiempo.
+        - `apicalls`: llama a una API específica y proporciona el nombre de usuario y la contraseña del usuario que llama.
+          y los parámetros. Las API son todos los métodos públicos estáticos `api…` en el
+          controladores en
+          [`frontend/server/src/Controllers/`](https://github.com/omegaup/omegaup/tree/main/frontend/server/src/Controllers).
+        - `scripts`: ejecuta uno de los scripts cron de omegaUp (`aggregateFeedback`, `assignBadges`,
+          `updateUserRank`), que viven en
+          [`stuff/cron/`](https://github.com/omegaup/omegaup/tree/main/stuff/cron).
 
-### Finalización del curso
+      Finalice una prueba `apicall` con un campo `expectedResults` que enumere los nombres de usuario que
+      debería recibir la insignia. Ver
+      [`coderOfTheMonth/test.json`](https://github.com/omegaup/omegaup/blob/main/frontend/badges/coderOfTheMonth/test.json)
+      para un ejemplo trabajado.
 
-| Insignia | Requisito | Descripción |
-|-------|-------------|-------------|
-| **Graduado del curso C++** | Curso completo de C++ | Finalización del curso |
-| **Graduado del curso de Python** | Curso completo de Python | Finalización del curso |
-| **Graduado en Introducción a los Algoritmos** | Curso completo de algoritmos | Finalización del curso |
-| **Introducción a Algoritmos 2 Graduado** | Curso avanzado completo | Finalización del curso |
+    - **`"testType": "phpunit"`** — escribe una prueba PHPUnit clásica llamada `<alias>Test.php`,
+      guardado bajo
+      [`frontend/tests/badges/`](https://github.com/omegaup/omegaup/tree/main/frontend/tests/badges),
+      siguiendo la misma estructura que las otras pruebas unitarias de omegaUp (y de uso gratuito
+      [fábricas](https://github.com/omegaup/omegaup/tree/main/frontend/tests/factories)).
 
-### Comunidad y contribución
+    Cada uno tiene sus ventajas y desventajas: prefiera `phpunit` para una insignia que de otro modo necesitaría muchas
+    llamadas API casi idénticas; de lo contrario, `apicalls` es la opción más ligera.
 
-| Insignia | Requisito | Descripción |
-|-------|-------------|-------------|
-| **Creador de problemas** | Crear un problema público | Creador de contenido |
-| **Gerente del concurso** | Organizar un concurso | Organizador del concurso |
-| **Gerente del concurso virtual** | Crear concursos virtuales | Facilitador de prácticas |
-| **Proveedor de comentarios** | Presentar nominaciones de calidad | Colaborador de la comunidad |
-| **Codificador del mes** | Ser seleccionado como codificador del mes | Reconocimiento mensual |
+8. **Ejecute las pruebas** para confirmar su consulta y la prueba otorgará la insignia a la derecha.
+   gente:
 
-### Insignias especiales
+    ```bash
+    ./vendor/bin/phpunit --bootstrap frontend/tests/bootstrap.php \
+      --configuration frontend/tests/phpunit.xml frontend/tests/badges/ --debug
+    # or simply
+    ./stuff/runtests.sh
+    ```
+9. **Abra la solicitud de extracción.** Si no hay ningún error, su credencial está lista: envíela.
 
-| Insignia | Requisito | Descripción |
-|-------|-------------|-------------|
-| **Usuario heredado** | Cuenta creada antes de 2020 | Adoptador pionero |
-| **Usuario actualizado** | Información completa del perfil | Finalización del perfil |
-| **Problema de la semana** | Resolver problema destacado | Desafío semanal |
-| **Problema de Navidad 2021** | Resolver el problema de las vacaciones | Participación en eventos |
+Como referencia, dos RP de insignia fusionados son buenas plantillas a seguir:
+[Administrador del concurso](https://github.com/omegaup/omegaup/pull/2602/files) y
+[Administrador del concurso virtual](https://github.com/omegaup/omegaup/pull/2603/files).
 
-## Implementación de insignias
-
-### Estructura del directorio
-
-Cada insignia está definida en `frontend/badges/[badge-name]/`:
-
-```
-frontend/badges/
-├── 100solvedProblems/
-│   ├── icon.svg          # Badge icon
-│   ├── localizations.json # Translations
-│   ├── query.sql         # Award criteria
-│   └── test.json         # Test cases
-├── cppExpert/
-│   └── ...
-└── default_icon.svg      # Fallback icon
-```
-### Estructura de consulta
-
-Las consultas de insignias devuelven ID de usuarios que califican:
-
-```sql
--- Example: 100solvedProblems/query.sql
-SELECT DISTINCT
-    i.user_id
-FROM
-    Identities i
-INNER JOIN
-    (
-        SELECT
-            s.identity_id,
-            COUNT(DISTINCT s.problem_id) AS solved_count
-        FROM
-            Submissions s
-        INNER JOIN
-            Runs r ON s.current_run_id = r.run_id
-        WHERE
-            r.verdict = 'AC'
-        GROUP BY
-            s.identity_id
-        HAVING
-            solved_count >= 100
-    ) AS solved ON i.identity_id = solved.identity_id
-WHERE
-    i.user_id IS NOT NULL;
-```
-### Formato de localización
-
-Soporte multilingüe en `localizations.json`:
-
-```json
-{
-  "es": {
-    "name": "100 Problemas resueltos",
-    "description": "Otorgado a personas que han resuelto 100 problemas o más."
-  },
-  "en": {
-    "name": "100 Solved Problems",
-    "description": "User has solved 100 or more problems."
-  },
-  "pt": {
-    "name": "100 Problemas Resolvidos",
-    "description": "Concedido a pessoas que resolveram 100 ou mais problemas."
-  }
-}
-```
-### Casos de prueba
-
-Validación en `test.json`:
-
-```json
-{
-  "users": ["test_user_1", "test_user_2"],
-  "expected": {
-    "test_user_1": true,
-    "test_user_2": false
-  }
-}
-```
-## Procesamiento de insignias
-
-### Ejecución de cronjob
-
-Las insignias se otorgan mediante el cronjob de asignación de insignias:
-
-```bash
-# Run badge assignment
-python3 stuff/cron/assign_badges.py
-```
-### Flujo de procesamiento
-
-```mermaid
-sequenceDiagram
-    participant Cron as Cronjob
-    participant DB as Database
-    participant Badge as Badge Query
-    
-    Cron->>Badge: Load query.sql
-    Badge->>DB: Execute query
-    DB-->>Badge: Qualifying users
-    Badge->>DB: Check existing awards
-    Badge->>DB: Insert new awards
-    Badge->>Cron: Report new badges
-```
-## Visualización de insignias
-
-### Perfil de usuario
-
-Las insignias aparecen en los perfiles de usuario en `/profile/{username}/`:
-
-- Icono de insignia (SVG)
-- Nombre localizado
-- Fecha de adjudicación
-- Descripción de la insignia al pasar el mouse
-
-### API de insignia
-
-Recuperar insignias mediante programación:
-
-```bash
-# Get all badges
-GET /api/Badge/list/
-
-# Get user's badges
-GET /api/Badge/myList/
-
-# Get specific user's badges
-GET /api/Badge/userList/?target_user={username}
-
-# Get badge details
-GET /api/Badge/badgeDetails/?badge_alias={alias}
-```
-## Creando nuevas insignias
-
-### Paso 1: Crear directorio
-
-```bash
-mkdir frontend/badges/newBadgeName
-```
-### Paso 2: escribir consulta
-
-Cree `query.sql` que devuelva valores `user_id` calificados:
-
-```sql
-SELECT DISTINCT
-    i.user_id
-FROM
-    Identities i
-WHERE
-    -- Your criteria here
-    i.user_id IS NOT NULL;
-```
-### Paso 3: Agregar localizaciones
-
-Crear `localizations.json`:
-
-```json
-{
-  "es": {
-    "name": "Nuevo Badge",
-    "description": "Descripción del badge."
-  },
-  "en": {
-    "name": "New Badge",
-    "description": "Badge description."
-  }
-}
-```
-### Paso 4: Agregar ícono (opcional)
-
-Cree `icon.svg` o utilice el icono predeterminado.
-
-### Paso 5: Agregar pruebas
-
-Cree `test.json` con los resultados esperados.
-
-### Paso 6: Pruebe localmente
-
-```bash
-# Run badge tests
-python3 stuff/cron/assign_badges.py --dry-run --badge=newBadgeName
-```
-## Documentación relacionada
-
-- **[API de insignias](../api/badges.md)** - Puntos finales de API para insignias
-- **[Patrones de base de datos](../development/database-patterns.md)** - Patrones de consulta
-- **[Cronjobs](../architecture/infrastructure.md)** - Procesamiento en segundo plano
+Si algo no queda claro mientras crea uno, no dude en comunicarse; consulte
+[Obteniendo ayuda](../getting-started/getting-help.md).

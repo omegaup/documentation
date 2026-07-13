@@ -26,5 +26,5 @@ omegaUp fornece recursos abrangentes de gerenciamento de concursos para organiza
 ## Documentação Relacionada
 
 - **[Gerenciamento de concursos](managing-contests.md)** - Guia de gerenciamento detalhado
-- **[API de concursos](../api/contests.md)** - Pontos de extremidade da API
+- **[API de concursos](../../reference/api.md)** - Pontos de extremidade da API
 - **[Arena](../arena.md)** - Interface do concurso

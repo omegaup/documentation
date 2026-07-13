@@ -52,12 +52,13 @@ omegaUp consiste em vários componentes principais:
 ### Front-end (PHP + MySQL)
 A camada de aplicação web que lida com interações de usuários, administração de problemas e concursos, gerenciamento de usuários, classificações e placares. Escrito em PHP com banco de dados MySQL.
 
-### Back-end (Ir)
-O subsistema de avaliação responsável por compilar e executar envios de usuários.
+### Back-end de avaliação (Go)
+O subsistema responsável por compilar e executar envios de usuários. Esses são **serviços Go separados**, não fazem parte do monorepo PHP: o avaliador, o executor e o transmissor vivem em [omegaup/quark](https://github.com/omegaup/quark), e o aplicativo PHP se comunica com o avaliador por HTTP (`OMEGAUP_GRADER_URL`).
 
-- **Avaliador**: Mantém a fila de envio, envia para os Corredores e determina veredictos
-- **Runner**: compila e executa programas em um ambiente sandbox seguro
-- **Minijail**: sandbox Linux (bifurcado do Chrome OS) para execução segura de código
+- **Avaliador**: Mantém a fila de envio, despacha para Corredores, executa os validadores e calcula veredictos
+- **Runner**: compila e executa programas dentro de uma sandbox segura
+- **Minijail**: o sandbox do Linux (bifurcado do Chrome OS) que isola cada execução
+- **Gitserver** ([omegaup/gitserver](https://github.com/omegaup/gitserver)): armazena cada problema como um repositório git
 
 ## Arquitetura de alto nível
 
@@ -105,9 +106,9 @@ flowchart TD
 | PHP | Controladores/API | 8.1.2 |
 | Pitão | Cronjobs | 3.10.12 |
 | Datilografado | Interface | 4.4.4 |
-| Vue.js | Estrutura de front-end | 2.5.22 |
+| Vue.js | Estrutura de front-end | 2.7.16 |
 | Inicialização | Estrutura de IU | 4.6.0 |
-| Vá | Graduador e Corredor | 20.0.1 |
+| Vá | Graduador / Corredor / Emissor (externo, [omegaup/quark](https://github.com/omegaup/quark)) | serviços v1.9.x |
 
 !!! informações "Atualizações de versão"
     As versões tecnológicas são atualizadas periodicamente para manter a plataforma suportada e segura.
@@ -117,9 +118,9 @@ flowchart TD
 Quando um usuário envia um código, eis o que acontece:
 
 1. **Frontend** envia HTTP POST para `/api/run/create/`
-2. **Nginx** encaminha a solicitação para **PHP** (PHP-FPM em implantações típicas)
+2. **Nginx** encaminha a solicitação para **PHP** (PHP-FPM em configurações típicas)
 3. **Bootstrap** carrega a configuração e inicializa o banco de dados
-4. **Controlador** (`RunController::apiCreate`) processa solicitação
+4. **Controlador** (`\OmegaUp\Controllers\Run::apiCreate`) processa solicitação
 5. **Autenticação** valida o token do usuário
 6. **Validação** verifica permissões, status do concurso e limites de taxas
 7. **Banco de dados** armazena envios com GUID

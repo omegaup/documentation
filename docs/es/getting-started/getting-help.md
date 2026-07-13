@@ -5,213 +5,94 @@ icon: bootstrap/help-circle
 ---
 # Obtener ayuda
 
-Sabemos que tendrá preguntas sobre cómo funcionan las cosas en omegaUp: preguntas técnicas, preguntas sobre procesos y más. Esta guía le ayudará a obtener mejores respuestas más rápido.
+Tendrá preguntas: sobre cómo el entorno de desarrollo se niega a aparecer, sobre un seguimiento de pila en lo profundo de `frontend/server/src/Controllers/`, sobre cómo funciona realmente el proceso de solicitud de GSoC en omegaUp. Esto es lo que se espera y se recomienda preguntar. Pero *cómo* preguntas decide qué tan buena respuesta obtienes y qué tan rápido llega, por lo que esta página es menos una lista de enlaces de chat y más una guía para obtener una buena respuesta a tu pregunta. Toda la filosofía detrás de esto es una sola línea: cuanto más contexto pongas al principio, menos idas y venidas gastan todos y es más probable que un voluntario ocupado se detenga para ayudarte.
 
-## Antes de preguntar
+## Busca antes de preguntar
 
-### 1. Buscar recursos existentes
+Casi todas las preguntas que responde un recién llegado han sido respondidas antes, a menudo varias veces, a menudo la misma semana durante la temporada GSoC. Así que el primer paso nunca es "publicar la pregunta": es una búsqueda de dos minutos, porque es muy probable que la respuesta ya esté escrita en algún lugar y la obtendrás instantáneamente en lugar de esperar horas hasta que un humano se despierte en otra zona horaria.
 
-Antes de publicar una pregunta, busque estos recursos:
+Vale la pena buscar tres lugares, aproximadamente en este orden de utilidad:
 
-#### Documentación
-- **Este sitio de documentación** - Busque su tema
-- **[Guía de configuración de desarrollo](development-setup.md)** - Problemas de instalación y configuración
-- **[Documentación de arquitectura](../architecture/index.md)** - Preguntas de diseño del sistema
+- **Este sitio de documentación.** Utilice el cuadro de búsqueda en la parte superior. Si su problema es la configuración del entorno, la página [Configuración de desarrollo](development-setup.md) recorre todo el flujo de `docker compose`; si se trata de abrir una solicitud de extracción, [Contribuyendo a omegaUp](contributing.md) cubre el flujo de trabajo de git; si se trata de "cómo funciona *este* subsistema", la sección [Arquitectura](../architecture/index.md) rastrea las rutas del código real de extremo a extremo. Si su pregunta tiene forma de API, la [referencia de API](../reference/api.md) generada enumera todos los puntos finales.
+- **Historial de mensajes de Discord.** Nuestra comunidad vive en el [servidor omegaUp Discord](https://discord.com/invite/K3JFd9d3wk), y el canal de trabajo para los contribuyentes es **#dev_training**. La barra de búsqueda de Discord es realmente poderosa: busque una palabra clave de su error (`port already allocated`, `wait-for-it`, el nombre de un servicio que falla) y muy a menudo llegará a un hilo donde alguien preguntó exactamente esto, este año o el año pasado, con la solución ya publicada debajo. Es por eso que insistimos en que todos publiquen públicamente (más sobre esto a continuación): el archivo con capacidad de búsqueda solo existe porque las preguntas anteriores se hicieron donde todos podían verlas.
+- **Google.** Si su pregunta es sobre Git, Docker, PHP 8.1, TypeScript o cualquier cosa que no sea específica de omegaUp, Google casi siempre será mejor que esperar a un mantenedor. Reserve los canales humanos para las partes específicas de omegaUp que nadie más en Internet conoce.
 
-#### Recursos comunitarios
-- **Búsqueda de Discord** - Buscar el historial de mensajes en nuestro [canal #dev_training](https://discord.com/invite/K3JFd9d3wk)
-  - Discord tiene una poderosa función de búsqueda: ya se han hecho muchas preguntas antes
-  - Busque por palabras clave relacionadas con su pregunta
+Si presenta su solicitud a través de Google Summer of Code, lea la página de ideas y preguntas frecuentes de GSoC para ese año (vinculada desde la sección [Comunidad/GSoC](../community/gsoc/index.md)) *antes* de preguntar sobre el proceso. Responde directamente a la mayoría de las preguntas sobre el proceso de solicitud, y las preguntas frecuentes cubren específicamente las preguntas recurrentes sobre cronogramas, propuestas y cómo se evalúan los candidatos.
 
-#### Recursos externos
-- **Google** - Para preguntas generales sobre Git, Docker, PHP, JavaScript, etc.
-  - Si su pregunta no es específica de omegaUp, es probable que Google tenga la respuesta.
+!!! consejo "La búsqueda se amplía, no se reduce"
+    Si su primera palabra clave no devuelve nada, pruebe con una redacción *diferente* en lugar de una más específica: copie la línea distintiva del mensaje de error, elimine las partes que son exclusivas de su máquina (rutas, ID de contenedor) y busque en el medio. La señal suele ser una o dos palabras, como `port is already allocated`, no el rastreo completo.
 
-!!! consejo "Consejos de búsqueda"
-    Pruebe diferentes combinaciones de palabras clave. A menudo, alguien ya ha hecho una pregunta similar antes.
+## Dónde preguntar: #dev_training, públicamente
 
-## Hacer preguntas de forma eficaz
+Cuando la búsqueda no salga, publique su pregunta en el canal **#dev_training** del [servidor de Discord](https://discord.com/invite/K3JFd9d3wk). omegaUp coordina en Discord en lugar de una lista de correo tradicional, por lo que #dev_training *es* la lista de correo; trátela como el registro público en el que se convertirá.
 
-### Dónde preguntar
+Aquí hay dos reglas, y ambas existen por la misma razón: una pregunta pública ayuda a muchas más personas que una privada:
 
-Publique su pregunta en el canal **#dev_training** de nuestro [servidor de Discord](https://discord.com/invite/K3JFd9d3wk).
+- **Publicar en el canal, nunca en un mensaje directo.** Un DM a un mantenedor llega exactamente a una persona, que puede estar dormida, ocupada o simplemente no es la que sabe la respuesta. La misma pregunta en #dev_training llega a todos, por lo que la persona disponible más rápida responde, *y* la respuesta se puede buscar para la siguiente persona que llegue a tu muro exacto. Si no encontró nada en la búsqueda, es casi seguro que no sea la última persona que lo necesitará.
+- **No etiquetes a personas específicas.** Manejamos deliberadamente una cultura inclusiva en la que cualquiera puede participar, y @-ing a un responsable indica "esto es entre tú y yo" y disuade silenciosamente a todos los demás de responder. Pregúntale a la habitación, no a una persona.
 
-!!! importante "Solo canales públicos"
-    - ✅ Publicar en canales públicos (no DM)
-    - ✅ Etiquetar el canal apropiado
-    - ❌ No envíes mensajes directos
-    - ❌ No etiquetes a personas específicas innecesariamente
+!!! importante "GitHub es para errores confirmados y discusión de diseño, no para ayuda con la configuración"
+    La discordia es donde te *despegas*. GitHub es donde se *siguen* las cosas. Una vez que haya confirmado un error reproducible en el código (no un problema con su propia máquina), abra un problema en [omegaup/omegaup/issues](https://github.com/omegaup/omegaup/issues) con los pasos de reproducción. Para ideas sobre funciones y conversaciones de diseño más extensas, utilice [Discusiones de GitHub](https://github.com/omegaup/omegaup/discussions). No abra un problema de GitHub porque `docker compose up` falló en su computadora portátil; esa es una pregunta #dev_training hasta que haya demostrado que el error se encuentra en el repositorio y no en su entorno.
 
-### Cómo preguntar
+## Cómo preguntar para que realmente te respondan
 
-Siga estas pautas para obtener mejores respuestas:
+Una buena pregunta concentra todo lo que un ayudante necesita para diagnosticarlo sin un solo seguimiento. Las preguntas vagas obtienen respuestas vagas o silencio; Las preguntas específicas obtienen correcciones específicas, porque usted ha respondido las primeras tres preguntas del ayudante. Incluya, por adelantado:
 
-#### 1. Proporcionar contexto
+- **Lo que intentabas hacer** y el comando exacto que ejecutaste.
+- **Lo que esperabas** que sucediera versus **lo que realmente** sucedió.
+- **El mensaje de error completo o el registro**, copiado y pegado como texto (no una captura de pantalla de su terminal; nadie puede buscar ni copiar una captura de pantalla).
+- **Lo que ya has probado**, para que nadie desperdicie una respuesta sugiriendo lo que hiciste hace una hora.
+- **Detalles relevantes del entorno** cuando podrían importar: su sistema operativo y su versión, la versión de Docker y, específicamente para omegaUp, si los contenedores terminaron de iniciarse (la pila de desarrollo puede tardar **entre 2 y 10 minutos** en funcionar por completo la primera vez, y muchos de los "está roto" resultan ser "aún no estaba listo").
 
-Explica lo que estás intentando hacer:
+### Una pregunta que tiene respuesta
 
 ```markdown
-I'm trying to set up my development environment on macOS, and I'm getting
-an error when running `docker compose up`.
+Setting up the dev environment on Ubuntu 22.04. `docker compose up` fails.
+
+Expected: all containers start and I can open the frontend on localhost:8001.
+Actual: the frontend container never binds; I get a port-conflict error.
+
+Error:
+ERROR: for frontend  Cannot start service frontend: driver failed programming
+external connectivity on endpoint omegaup-frontend-1:
+Bind for 0.0.0.0:8001 failed: port is already allocated
+
+What I've tried:
+- `lsof -i :8001` showed a leftover process; I killed it and re-ran — same error.
+- Waited ~10 min in case it was still booting.
+- Searched Discord for "port already allocated", found one thread but it was
+  about port 13306 (MySQL), not 8001.
 ```
-#### 2. Describe el problema
+Esa pregunta nombra el puerto que omegaUp realmente publica para la interfaz (**8001**), muestra el error literal de Docker, demuestra que el autor de la pregunta ya descartó el retraso en el tiempo de arranque y un proceso obsoleto, e incluso cita el hilo que casi falló que encontraron, por lo que quien lo conteste puede ir directamente a la causa real en lugar de volver a preguntar lo obvio. Un ayudante que conozca la pila reconocerá inmediatamente los puertos en juego (frontend en **8001**, MySQL en **13306**, Go Grader en **21680**) y podrá concentrarse rápidamente.
 
-Incluye:
-- **Lo que esperabas que sucediera**
-- **Lo que realmente pasó**
-- **Pasos que seguiste**
-- **Mensajes de error** (copia y pega el error completo)
-- **Fragmentos de código relevantes** (si corresponde)
-- **Registros** (si corresponde)
-
-#### 3. Muestra lo que has probado
-
-Menciona lo que ya has intentado:
-
-```markdown
-I've already tried:
-- Reinstalling Docker
-- Checking the documentation
-- Searching Discord history for similar issues
-```
-#### 4. Incluir información del sistema
-
-Si es relevante, incluya:
-- Sistema operativo y versión.
-- Versión acoplable
-- Versión de Node.js (si corresponde)
-- Cualquier otro detalle ambiental relevante.
-
-### Ejemplo de buena pregunta
-
-```markdown
-Hi! I'm setting up the development environment on Ubuntu 22.04 and getting
-an error when running `docker compose up`.
-
-**Expected:** Containers should start successfully
-**Actual:** Getting "port already in use" error
-
-**Steps I followed:**
-1. Installed Docker and Docker Compose
-2. Cloned the repository
-3. Ran `docker compose up`
-
-**Error message:**
-```
-ERROR: para la interfaz No se puede iniciar la interfaz del servicio: 
-El controlador falló al programar la conectividad externa en el terminal 
-omegaup-frontend-1: Falló el enlace para 0.0.0.0:8001: el puerto ya está asignado
-```
-
-**What I've tried:**
-- Checked if port 8001 is in use: `lsof -i :8001`
-- Found process using the port and killed it
-- Still getting the same error
-
-Any help would be appreciated!
-```
-### Ejemplo de mala pregunta
+### Una pregunta que se ignora
 
 ```markdown
 docker not working help pls
 ```
-!!! fracaso "Por qué esto es malo"
-    - No hay contexto sobre lo que significa "no funciona"
-    - Ningún mensaje de error
-    - No hay información del sistema
-    - No hay indicación de lo que se intentó.
+!!! fracaso "¿Por qué éste muere sin respuesta?"
+    No hay nada sobre lo que actuar: ningún comando, ningún texto de error, ningún sistema operativo, ninguna señal de lo que significa "no funciona" o de lo que ya se intentó. Responderlo requiere cuatro rondas de "¿qué sistema operativo?", "¿qué comando?", "pegue el error", "¿qué ha probado?" – y la mayoría de la gente simplemente pasará de largo en lugar de comenzar ese interrogatorio. La solución no es más cortesía; es más información.
 
-## Seguimiento
+Para un tratamiento más profundo de esta misma idea, recomendamos el ensayo breve de Mike Ash [*Getting Answers*](https://www.mikeash.com/getting_answers.html): es el artículo canónico sobre cómo formular una pregunta técnica que la gente quiere responder.
 
-### Si tu pregunta obtiene respuesta
+## Responder al hilo existente, no iniciar uno nuevo
 
-1. **Agradece a la persona** que te ayudó
-2. **Confirma que la solución funcionó**
-3. **Actualice el hilo** con lo que lo solucionó (si es diferente de la solución sugerida)
+Si su búsqueda encontró un hilo *cerrado* pero la respuesta allí no resolvió su caso, responda en ese hilo en lugar de abrir uno nuevo. Dos razones, ambas sobre la siguiente persona: mantiene todo lo relacionado con un problema en un solo lugar, y significa que quien lo soluciona lo arregla *para que conste*, por lo que el lector que llega a esto en seis meses encuentra la historia completa (síntoma original, intentos fallidos, solución funcional) en un solo pergamino en lugar de dispersarse en tres hilos a medio responder. Volver a publicar la misma pregunta en un hilo nuevo divide el conocimiento y hace que sea más probable que nadie escriba la respuesta real.
 
-¡Esto ayuda a futuras personas con el mismo problema!
+## Cierra el ciclo cuando esté resuelto.
 
-### Si lo resuelves tú mismo
+Este es el paso que todos olvidan y es más importante de lo que parece. Cuando se resuelva su problema, ya sea que alguien lo haya ayudado o usted mismo lo haya resuelto, **regrese al hilo y diga cómo lo resolvió.**
 
-Si descubres la solución:
+La razón es concreta y un poco egoísta por parte de la comunidad: si dejas el hilo abierto, las personas que no vieron tu último mensaje seguirán leyéndolo, seguirán pensando y seguirán dedicando su tiempo a intentar ayudar a alguien que ya se ha despegado. Un hilo sin cerrar desperdicia silenciosamente el esfuerzo voluntario exacto por el que estabas agradecido. Y cuando la siguiente persona encuentre su error idéntico, la solución publicada será el hilo que le entrega la barra de búsqueda. Diga qué funcionó, agradezca a quien ayudó y, si la solución difirió de lo sugerido, explique la diferencia: esa delta suele ser la oración más útil de todo el hilo.
 
-1. **Actualiza el hilo** explicando cómo lo resolviste
-2. **Márcalo como resuelto** (si la plataforma lo admite)
+## Ayuda a la siguiente persona
 
-Esto evita que otros pierdan el tiempo intentando ayudar después de que ya lo hayas resuelto.
+Obtener ayuda y brindar ayuda son el mismo ciclo visto desde dos lados, así que una vez que tenga equilibrio, lea las preguntas que otros colaboradores publican en #dev_training y responda las que pueda. Esto no es solo buena ciudadanía: **lo tenemos en cuenta al seleccionar candidatos de GSoC.** Un colaborador que ayuda de manera confiable a sus pares demuestra exactamente la colaboración en la que se ejecuta el proyecto y se refleja en la forma en que evaluamos las solicitudes. En la práctica, rara vez es necesario ser un experto: señalar a alguien la página del documento correcta, reconocer un error con el que luchó personalmente la semana pasada o simplemente confirmar "sí, ese arranque de 2 a 10 minutos es normal, espere" es a menudo la respuesta completa. Explicar algo que acabas de aprender también es la forma más rápida de asegurarte de que realmente lo entiendes.
 
-### Si su pregunta fue formulada antes
+## La versión corta
 
-Si encuentra un hilo existente con su pregunta:
-
-- **Responder a ese hilo** en lugar de crear uno nuevo
-- **Agregue nueva información** si su situación es diferente
-- **Hacer preguntas de seguimiento** en el mismo hilo
-
-Esto mantiene unida la información relacionada y hace que sea más fácil de encontrar.
-
-## Ayudar a los demás
-
-¡Te animamos a **ayudar a tus compañeros** con sus preguntas!
-
-### ¿Por qué ayudar a los demás?
-
-- **Aprendizaje**: Explicar conceptos te ayuda a comprenderlos mejor.
-- **Comunidad**: construir una comunidad útil e inclusiva
-- **Reconocimiento**: tenemos en cuenta la utilidad al seleccionar candidatos de GSoC
-
-### Cómo ayudar
-
-- **Leer las preguntas** publicadas por otros con regularidad
-- **Responda preguntas** con las que esté familiarizado
-- **Comparte recursos** que podrían ayudar
-- **Sea paciente y amable** - todos están aprendiendo
-
-## Qué evitar
-
-### ❌ No hagas estas cosas
-
-1. **No envíe mensajes directos**: publique en canales públicos para que otros puedan beneficiarse
-2. **No etiquetes a personas específicas** - Publica públicamente para que cualquiera pueda ayudar
-3. **No volver a publicar preguntas**: busque primero, responda a los hilos existentes
-4. **No hagas la misma pregunta varias veces** - Ten paciencia para recibir las respuestas
-
-### ✅ Haz Estas Cosas
-
-1. **Buscar primero** - Consulta la documentación y el historial de Discord
-2. **Publicar públicamente**: utilice los canales adecuados
-3. **Sea específico**: proporcione contexto, errores y lo que ha probado
-4. **Seguimiento**: actualice los hilos cuando se resuelvan los problemas.
-5. **Ayuda a otros** - Responde preguntas cuyas respuestas conoces
-
-## Recursos adicionales
-
-### Aprender a hacer mejores preguntas
-
-Recomendamos leer:
-- **[Cómo hacer preguntas de manera inteligente](https://www.mikeash.com/getting_answers.html)** - Excelente guía para hacer preguntas efectivas
-
-### Recursos específicos de omegaUp
-
-- **[Configuración de desarrollo](development-setup.md)** - Problemas de configuración del entorno
-- **[Guía de contribución](contributing.md)** - Preguntas de relaciones públicas y flujo de trabajo
-- **[Documentación de arquitectura](../architecture/index.md)** - Preguntas de diseño del sistema
-- **[Documentación de API](../api/index.md)** - Preguntas relacionadas con API
-
-### Canales comunitarios
-
-- **Discord**: [canal #dev_training](https://discord.com/invite/K3JFd9d3wk) - Canal de soporte principal
-- **Problemas de GitHub**: [Informar errores](https://github.com/omegaup/omegaup/issues) - Para errores confirmados
-- **Discusiones de GitHub**: [Discusiones generales](https://github.com/omegaup/omegaup/discussions) - Para ideas sobre funciones y debates
-
-## Resumen
-
-1. ✅ **Buscar primero** - Documentación, Historial de Discord, Google
-2. ✅ **Pregunta públicamente** - Utiliza los canales adecuados, no mensajes directos
-3. ✅ **Sea específico**: proporcione contexto, errores, pasos e información del sistema
-4. ✅ **Seguimiento** - Actualizar los hilos cuando se resuelvan
-5. ✅ **Ayuda a otros** - Responde preguntas con las que puedas ayudar
+Si no recuerdas nada más: **busca primero** (docs, historial de Discord, Google), **pregunta en #dev_training públicamente** con tu comando, tu error textual y lo que ya intentaste, **responde a los hilos existentes** en lugar de iniciar otros nuevos, **publica tu solución** cuando esté resuelta para que nadie siga persiguiendo un problema cerrado, y **ayuda a tus compañeros** porque el archivo de búsqueda que acaba de salvarte fue creado por personas que hicieron exactamente eso.
 
 ---
 
-**¿Aún necesitas ayuda?** Únete a nuestro [servidor de Discord](https://discord.com/invite/K3JFd9d3wk) y pregunta en el canal #dev_training.
+**¿Aún estás atascado?** Ingresa a [omegaUp Discord](https://discord.com/invite/K3JFd9d3wk) y pregunta en **#dev_training**. Con tu error pegado y tu sistema operativo nombrado, generalmente tendrás una respuesta antes de terminar tu café.

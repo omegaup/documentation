@@ -43,8 +43,8 @@ El sistema de evaluación es el corazón de omegaUp y se encarga de la compilaci
 
 | Componente | Descripción | Documentación |
 |-----------|-------------|---------------|
-| **Calificador** | Gestión de colas y determinación de veredictos | [Calificador](grader.md) |
-| **Corredor** | Compilación de código y ejecución en espacio aislado | [Corredor](runner.md) |
+| **Calificador** | Gestión de colas y determinación de veredictos | [Calificador](../architecture/grader-internals.md) |
+| **Corredor** | Compilación de código y ejecución en espacio aislado | [Corredor](../architecture/runner-internals.md) |
 | **Caja de arena** | Ejecución segura usando Minijail | [Caja de arena](sandbox.md) |
 | **Veredictos** | Tipos de resultados y modelos de puntuación | [Veredictos](verdicts.md) |
 
@@ -87,7 +87,7 @@ flowchart LR
 - **Experiencia en idiomas**: especialistas en C++, Java y Python
 - **Comunidad**: creador de problemas, administrador de concursos, proveedor de comentarios
 
-## Matriz de funciones
+## Matriz de características
 
 | Característica | Práctica | Concurso | Curso |
 |---------|----------|---------|--------|
@@ -101,6 +101,6 @@ flowchart LR
 
 ## Documentación relacionada
 
-- **[Referencia de API](../api/index.md)** - Puntos finales de API para todas las funciones
+- **[Referencia de API](../reference/api.md)** - Puntos finales de API para todas las funciones
 - **[Arquitectura](../architecture/index.md)** - Detalles de la arquitectura del sistema
 - **[Guías de desarrollo](../development/index.md)** - Guías de implementación de funciones
