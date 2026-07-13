@@ -59,9 +59,9 @@ If you're new to omegaUp, we recommend:
 
 omegaUp uses Docker for local development. At a high level:
 
-- **Web + API**: PHP controllers and DAOs over **MySQL** (classic MVC; JSON APIs)
-- **Judge**: **Go** grader, runners, and **minijail** sandbox
-- **Browser UI**: **Vue.js**, **TypeScript**, **Bootstrap 4** (ongoing migration away from legacy templates)
+- **Web + API**: **PHP 8.1** controllers and DAOs over **MySQL 8** (classic MVC; JSON APIs)
+- **Judge**: **Go** grader, runners, and **minijail** sandbox — a separate service (`omegaup/quark`) the backend calls over HTTP
+- **Browser UI**: **Vue 2.7** single-file components, **TypeScript**, **Bootstrap 4**, rendered inside a **Twig 3** server shell
 - **Problem storage**: **gitserver** and zip/case layout as documented under [Features → Problems](../features/problems/index.md)
 
 ### Where things live in the repo (quick map)
