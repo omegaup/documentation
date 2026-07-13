@@ -4,13 +4,13 @@ description: WebSocket server for real-time updates
 icon: bootstrap/cloud
 ---
 
-# Broadcaster Architecture
+# Broadcaster Architecture {#broadcaster-architecture}
 
 The broadcaster is the small Go service that makes the arena feel alive. When you are sitting in a contest and your submission flips from "judging" to a green **AC**, or the scoreboard reshuffles because a rival just solved problem C, that update did not arrive because your browser polled for it — it was *pushed* to you over a WebSocket that the broadcaster has been holding open since you opened the page. Its entire job is to keep one long-lived connection per participant and fan out near-realtime events (verdicts, scoreboard changes, clarifications) to exactly the people allowed to see them.
 
 It lives in the separate [`omegaup/quark`](https://github.com/omegaup/quark) Go repository (**not** in the PHP monorepo), alongside the grader and the runner. The PHP frontend never speaks WebSocket itself; it only ever POSTs plain JSON to the grader, and the grader forwards it here. A useful one-line mental model: **the broadcaster is a stateless in-memory pub/sub fabric whose subscriptions are authorized by the PHP frontend and whose events are published by the grader.** It holds no database, caches nothing, and if it crashes and restarts, every client simply reconnects and the world is whole again — the only thing lost is a few seconds of "live-ness".
 
-## Situating it: who talks to whom
+## Situating it: who talks to whom {#situating-it-who-talks-to-whom}
 
 The broadcaster exposes **two** HTTP servers on two different ports, because it has two completely different audiences with two completely different trust levels.
 
@@ -39,7 +39,7 @@ flowchart LR
     BC -->|"push JSON frame"| Client
 ```
 
-## A subscriber connects, and PHP decides what it may hear
+## A subscriber connects, and PHP decides what it may hear {#a-subscriber-connects-and-php-decides-what-it-may-hear}
 
 Everything starts when a browser opens the arena. The frontend's [`events_socket.ts`](https://github.com/omegaup/omegaup/blob/main/frontend/www/js/omegaup/arena/events_socket.ts) builds a URL like `wss://omegaup.com/events/?filter=/problemset/1234`, appending the scoreboard token when the page was opened via a public-scoreboard link (`.../problemset/1234/<token>`), and calls `new WebSocket(this.uri, 'com.omegaup.events')`. The `filter` query parameter is the heart of the protocol: it is a comma-separated list of resource paths the client claims to be interested in.
 
@@ -49,7 +49,7 @@ Then comes the crucial handoff: the broadcaster **does not decide for itself** w
 
 If the frontend answers `200`, its JSON body — modeled by `ValidateFilterResponse` — tells the broadcaster who you turned out to be: your `user`, whether you're a global `admin`, and the lists of `problem_admin`, `contest_admin`, and `problemset_admin` resources you administer. The broadcaster stashes these in per-subscriber maps and will consult them on every single message. If the frontend answers anything else, `NewSubscriber` returns an `UpstreamError` carrying the frontend's status code and body, and the broadcaster relays that exact status straight back to the browser — so a `403` from PHP becomes a `403` on the WebSocket upgrade, and the client never joins. This is the single authorization gate; there is no re-check later, which is *why* the broadcaster can afford to be a dumb, fast fan-out loop afterward.
 
-## Filters: how one message finds its audience
+## Filters: how one message finds its audience {#filters-how-one-message-finds-its-audience}
 
 A subscriber isn't subscribed to "channels" in any stateful sense — it carries a list of `Filter` predicates parsed from that comma-separated string by `NewFilter` in [`broadcaster/filter.go`](https://github.com/omegaup/quark/blob/main/broadcaster/filter.go). When a message arrives, the broadcaster asks every subscriber "does any of your filters match this?" and delivers only if the answer is yes. There are currently five filter shapes, each a leading-slash path:
 
@@ -61,7 +61,7 @@ A subscriber isn't subscribed to "channels" in any stateful sense — it carries
 
 The gating logic is worth reading literally, because it is the reason a contestant never sees another contestant's private run. `ContestFilter.Matches` returns true only when `msg.Contest == f.contest` **and** at least one of: `subscriber.admin`, `msg.Public`, `subscriber.user != "" && msg.User == subscriber.user`, or the contest is in the subscriber's `contestAdminMap`. So a non-admin sitting in a contest gets the *public* scoreboard broadcasts and *their own* run updates, but a private per-user event addressed to someone else fails every clause and is silently skipped. The frontend's browser filter is deliberately coarse (`/problemset/<id>`); the broadcaster's per-message check is what makes the delivery precise.
 
-## The real path: a run is graded and the verdict lands in your browser
+## The real path: a run is graded and the verdict lands in your browser {#the-real-path-a-run-is-graded-and-the-verdict-lands-in-your-browser}
 
 Now trace one submission all the way through. Suppose you submit to problem C in contest `pizza-2024`, the runner executes it, and the grader finishes with a verdict of `AC`.
 
@@ -90,7 +90,7 @@ sequenceDiagram
     Note over B: also: contestChan <- contest alias
 ```
 
-## The scoreboard loop: why one verdict triggers a second round-trip
+## The scoreboard loop: why one verdict triggers a second round-trip {#the-scoreboard-loop-why-one-verdict-triggers-a-second-round-trip}
 
 A verdict updating your own row is only half the story. That same `AC` might change the *scoreboard*, and the scoreboard is computed in PHP, not in Go. The broadcaster bridges this with a clever second step hiding in the `/broadcast/` handler.
 
@@ -115,7 +115,7 @@ sequenceDiagram
     B->>C: push /scoreboard/update/
 ```
 
-## Two transports: WebSocket and the SSE fallback
+## Two transports: WebSocket and the SSE fallback {#two-transports-websocket-and-the-sse-fallback}
 
 The `Transport` interface in [`broadcaster/transport.go`](https://github.com/omegaup/quark/blob/main/broadcaster/transport.go) abstracts *how* a frame reaches a subscriber, and there are two implementations. The default is `WebSocketTransport`, chosen by upgrading the HTTP connection with the `com.omegaup.events` subprotocol; its `Send` writes a `TextMessage` under a write deadline of `WriteDeadline` (currently **5s**), and its `ReadLoop` reads and *discards* everything the client sends — the protocol is one-directional, the client never talks back except to keep the pipe warm. `Ping` sends a WebSocket control ping.
 
@@ -123,11 +123,11 @@ The second is `SSETransport`, selected when the request's `Accept` header asks f
 
 The frontend prefers the WebSocket and treats failure gracefully. In `events_socket.ts`, if the socket never opens or later drops, `connect()` catches it, reports an `events-socket / fallback` telemetry event, and starts **polling** the REST API on a timer (`setupPolls` hits `api.Problemset.scoreboard` and the clarifications endpoint) so the arena keeps updating — just less promptly. If the socket later reconnects, those polling intervals are cleared. This is the graceful-degradation story: a participant behind a proxy that murders WebSockets still sees a working, if slightly laggier, scoreboard rather than a frozen page.
 
-## Deauthentication: kicking a user off
+## Deauthentication: kicking a user off {#deauthentication-kicking-a-user-off}
 
 The internal API's other endpoint, `/deauthenticate/<user>/`, exists for the moment a user logs out or has their session revoked: the frontend can tell the broadcaster to drop *all* of that user's live connections immediately, rather than waiting for them to notice. It pushes the username onto the `deauth` channel; the main `Run` loop then iterates the subscribers and calls `remove` on every one whose `user` matches, which closes their `send` channel and lets their `Subscriber.Run` goroutine unwind and close the socket. Without this, a revoked session could keep receiving private contest events until its WebSocket happened to drop on its own.
 
-## Configuration
+## Configuration {#configuration}
 
 The full `BroadcasterConfig` and its defaults live in [`common/context.go`](https://github.com/omegaup/quark/blob/main/common/context.go). The values that matter operationally, all current defaults:
 
@@ -145,7 +145,7 @@ The full `BroadcasterConfig` and its defaults live in [`common/context.go`](http
 
 The `--insecure` flag disables TLS on the internal API server entirely and, as a side effect, adds permissive CORS headers on `/broadcast/` — handy for local development, but as with the grader's `--insecure` curl flag, it's a known wart you never want in production.
 
-## Metrics and observability
+## Metrics and observability {#metrics-and-observability}
 
 The broadcaster registers Prometheus metrics in [`cmd/omegaup-broadcaster/metrics.go`](https://github.com/omegaup/quark/blob/main/cmd/omegaup-broadcaster/metrics.go), served at `/metrics`. The ones worth watching, all prefixed `broadcaster_`:
 
@@ -154,7 +154,7 @@ The broadcaster registers Prometheus metrics in [`cmd/omegaup-broadcaster/metric
 - **`channel_drop_total`** — counter incremented on *every* drop, whether the global queue was full, a subscriber's queue was full, or a subscribe/unsubscribe request was shed. A rising `channel_drop_total` is the canonical symptom that `ChannelLength` is too small or a downstream is too slow — realtime updates are being silently discarded.
 - **`process_latency_seconds`** / **`dispatch_latency_seconds`** — summaries measuring, respectively, how long a message waited before the fan-out loop enqueued it to all subscribers, and how long until it was actually written to the wire. These are timed off the `QueuedMessage.time` stamp set at ingestion. The binary also mounts `net/http/pprof`, so live goroutine and heap profiles are available when a connection leak is suspected.
 
-## Source Code
+## Source Code {#source-code}
 
 Everything above lives in [`omegaup/quark`](https://github.com/omegaup/quark):
 
@@ -163,7 +163,7 @@ Everything above lives in [`omegaup/quark`](https://github.com/omegaup/quark):
 - [`broadcaster/filter.go`](https://github.com/omegaup/quark/blob/main/broadcaster/filter.go) — the five filter types and their per-message matching rules.
 - [`broadcaster/transport.go`](https://github.com/omegaup/quark/blob/main/broadcaster/transport.go) — the WebSocket and SSE transports.
 
-## Related Documentation
+## Related Documentation {#related-documentation}
 
 - **[Grader Internals](grader-internals.md)** — where `/run/update/` events are born.
 - **[Infrastructure](infrastructure.md)** — how the service is deployed and proxied.
