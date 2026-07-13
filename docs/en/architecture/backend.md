@@ -136,4 +136,4 @@ The one piece of security policy worth internalizing lives in `handleException()
 
 - **[Database Patterns](../development/database-patterns.md)** — the DAO/VO layer in depth
 - **[MVC Pattern](mvc-pattern.md)** — how controllers, DAOs and VOs fit together
-- **[API Reference](../api/index.md)** — the endpoint catalog
+- **[API Reference](../reference/api.md)** — the endpoint catalog

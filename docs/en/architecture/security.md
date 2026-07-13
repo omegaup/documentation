@@ -250,7 +250,7 @@ hand it to `thirdPartyLogin('Google', ...)`.
 > GitHub OAuth is optional in production but commonly configured for **local dev**. Set
 > `OMEGAUP_GITHUB_CLIENT_ID` / `OMEGAUP_GITHUB_CLIENT_SECRET` in
 > `frontend/server/config.php` — see the GitHub OAuth section in
-> [Development setup](../../getting-started/development-setup.md).
+> [Development setup](../getting-started/development-setup.md).
 
 ## Password storage
 
@@ -426,5 +426,5 @@ mysteriously at run time.
 ## Related documentation
 
 - **[Runner internals](runner-internals.md)** — the grading pipeline that drives the sandbox
-- **[Authentication API](../api/authentication.md)** — the login, token, and OAuth endpoints
-- **[Error codes](../api/error-codes.md)** — including `lockdown`, `loginRequired`, and the CSRF errors above
+- **[Authentication API](../reference/api.md)** — the login, token, and OAuth endpoints
+- **[Error codes](../reference/api.md)** — including `lockdown`, `loginRequired`, and the CSRF errors above

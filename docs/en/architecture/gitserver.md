@@ -175,5 +175,5 @@ And on the callers' side: [`ProblemArtifacts.php`](https://github.com/omegaup/om
 ## Related Documentation
 
 - **[Grader Internals](grader-internals.md)** — how the grader consumes revisions and caches inputs by hash.
-- **[Problems API](../api/problems.md)** — the problem-management endpoints that ultimately drive `ProblemDeployer`.
+- **[Problems API](../reference/api.md)** — the problem-management endpoints that ultimately drive `ProblemDeployer`.
 - **[Problem Versioning](../features/problem-versioning.md)** — the author-facing view of drafts, publishing, and history.

@@ -109,5 +109,5 @@ And that's the whole trip: your keystroke became an HTTP POST, a row in MySQL, a
 ## Related Documentation
 
 - **[Architecture Overview](index.md)** — how the frontend, grader, runner, broadcaster, and gitserver fit together.
-- **[Grader](../features/grader.md)** — the queue router and dispatch loop in depth.
-- **[Runner](../features/runner.md)** — the sandbox, compilation conventions, and Minijail.
+- **[Grader](grader-internals.md)** — the queue router and dispatch loop in depth.
+- **[Runner](runner-internals.md)** — the sandbox, compilation conventions, and Minijail.
