@@ -116,6 +116,7 @@ custom_fences = [
     { "Components" = "development/components.md" },
     { "Database Patterns" = "development/database-patterns.md" },
     { "Migration Guide" = "development/migration-guide.md" },
+    { "Notifications" = "development/notifications.md" },
     { "Useful Commands" = "development/useful-commands.md" },
     { "GSoC page generation" = "development/gsoc-data-generation.md" },
 ]
