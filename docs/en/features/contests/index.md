@@ -27,5 +27,5 @@ omegaUp provides comprehensive contest management capabilities for organizing pr
 ## Related Documentation
 
 - **[Managing Contests](managing-contests.md)** - Detailed management guide
-- **[Contests API](../api/contests.md)** - API endpoints
+- **[Contests API](../../reference/api.md)** - API endpoints
 - **[Arena](../arena.md)** - Contest interface

@@ -44,8 +44,8 @@ The evaluation system is the heart of omegaUp, handling code compilation, execut
 
 | Component | Description | Documentation |
 |-----------|-------------|---------------|
-| **Grader** | Queue management and verdict determination | [Grader](grader.md) |
-| **Runner** | Code compilation and sandboxed execution | [Runner](runner.md) |
+| **Grader** | Queue management and verdict determination | [Grader](../architecture/grader-internals.md) |
+| **Runner** | Code compilation and sandboxed execution | [Runner](../architecture/runner-internals.md) |
 | **Sandbox** | Secure execution using Minijail | [Sandbox](sandbox.md) |
 | **Verdicts** | Result types and scoring models | [Verdicts](verdicts.md) |
 
@@ -103,6 +103,6 @@ flowchart LR
 
 ## Related Documentation
 
-- **[API Reference](../api/index.md)** - API endpoints for all features
+- **[API Reference](../reference/api.md)** - API endpoints for all features
 - **[Architecture](../architecture/index.md)** - System architecture details
 - **[Development Guides](../development/index.md)** - Feature implementation guides
