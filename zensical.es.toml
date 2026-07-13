@@ -86,8 +86,6 @@ custom_fences = [
 "Características" = [
     { "Descripción general" = "features/" },
     { "Arena" = "features/arena.md" },
-    { "Grader" = "features/grader.md" },
-    { "Runner" = "features/runner.md" },
     { "Sandbox" = "features/sandbox.md" },
     { "Versionado de problemas" = "features/problem-versioning.md" },
     { "Actualizaciones en tiempo real" = "features/realtime.md" },
@@ -112,29 +110,9 @@ custom_fences = [
     { "Componentes" = "development/components.md" },
     { "Patrones de base de datos" = "development/database-patterns.md" },
     { "Guía de migración" = "development/migration-guide.md" },
+    { "Notificaciones" = "development/notifications.md" },
     { "Comandos útiles" = "development/useful-commands.md" },
     { "Generación de páginas GSoC" = "development/gsoc-data-generation.md" },
-]
-
-[[project.nav]]
-"Referencia de API" = [
-    { "Descripción general" = "api/" },
-    { "REST API" = "api/rest-api.md" },
-    { "Autenticación" = "api/authentication.md" },
-    { "Usuarios" = "api/users.md" },
-    { "Problemas" = "api/problems.md" },
-    { "Concursos" = "api/contests.md" },
-    { "Ejecuciones" = "api/runs.md" },
-    { "Aclaraciones" = "api/clarifications.md" },
-    { "Grupos" = "api/groups.md" },
-    { "Equipos" = "api/teams.md" },
-    { "Escuelas" = "api/schools.md" },
-    { "Insignias" = "api/badges.md" },
-    { "Certificados" = "api/certificates.md" },
-    { "Etiquetas" = "api/tags.md" },
-    { "Nominaciones de calidad" = "api/quality-nominations.md" },
-    { "Admin" = "api/admin.md" },
-    { "Códigos de error" = "api/error-codes.md" },
 ]
 
 [[project.nav]]
@@ -166,6 +144,7 @@ custom_fences = [
     { "Glosario" = "reference/glossary.md" },
     { "Lenguajes soportados" = "reference/languages.md" },
     { "Enlaces útiles" = "reference/links.md" },
+    { "Referencia de API" = "reference/api.md" },
 ]
 
 [project.extra]
