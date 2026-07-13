@@ -29,7 +29,7 @@ Google Summer of Code es un programa global que acerca a los estudiantes desarro
 
     ---
 
-    Fases de solicitud, concurso clasificatorio e ideas de proyecto (rendimiento SQL, monitorización, Vue 3, Bootstrap 5, integración del Problem Creator y más).
+    Fases de solicitud, clasificación de concursos e ideas de proyectos (optimización de consultas, monitoreo, Vue 3, Bootstrap 5, integración de Problem Creator y más).
 
     [:octicons-arrow-right-24: Ver 2026](2026.md)
 
@@ -39,7 +39,7 @@ Google Summer of Code es un programa global que acerca a los estudiantes desarro
 
 | Año | Proyectos | Aspectos destacados |
 |------|----------|------------|
-| **[2025](2025.md)** | 6 | Asistente de IA, generación de editoriales, registro en cursos y más |
+| **[2025](2025.md)** | 6 | Asistente de enseñanza de IA, generación editorial, registro de cursos y más |
 | **[2024](2024.md)** | 2 | Migración de Problem Creator a Vue.js, cursos públicos en GitHub |
 | **[2023](2023.md)** | 2 | Cuentas infantiles que cumplen con COPPA, migración de prueba de Cypress |
 

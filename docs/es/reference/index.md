@@ -27,7 +27,7 @@ El [Glosario](glossary.md) cubre:
 
 ## Idiomas admitidos
 
-La referencia [Idiomas](languages.md) incluye:
+La referencia de [Idiomas](languages.md) incluye:
 
 | Idioma | Compilador | Caso de uso |
 |----------|----------|----------|
@@ -55,7 +55,7 @@ La página [Enlaces](links.md) proporciona:
 
 ## Documentación relacionada
 
-- **[Referencia de API](../api/index.md)** - Documentación API completa
+- **[Referencia de API](../reference/api.md)** - Documentación API completa
 - **[Arquitectura](../architecture/index.md)** - Diseño del sistema
 - **[Guías de desarrollo](../development/index.md)** - Recursos para desarrolladores
 - **[Características](../features/index.md)** - Documentación de funciones

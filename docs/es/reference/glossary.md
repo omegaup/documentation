@@ -3,264 +3,190 @@ title: Glosario
 description: Terminología y definiciones utilizadas en omegaUp
 icon: bootstrap/book
 ---
-# Glosario
+# Glosario {#glossary}
 
-Referencia completa de términos y definiciones utilizados en toda la documentación de omegaUp y la plataforma.
+Este es el vocabulario que los mantenedores realmente usan en la revisión del código, en el rastreador de problemas y cuando algo falla a las 2 a.m. Deliberadamente no es un diccionario alfabético de palabras de moda de MVC: las entradas se agrupan según su ubicación en la vida de un envío, porque así es como se construye el sistema y cómo terminará depurándolo. Casi todos los términos enlazan con el símbolo, archivo o clave de configuración exacto que lo implementa, por lo que puede leer la verdad en lugar de confiar en esta página.
 
----
-
-## Términos generales
-
-### omegaArriba
-La plataforma de programación educativa que ayuda a los estudiantes a mejorar sus habilidades de programación a través de problemas de práctica, concursos y cursos.
-
-### Problema
-Un desafío de programación que consta de un planteamiento del problema, especificaciones de entrada/salida, restricciones y casos de prueba. Los problemas son la unidad central de contenido de omegaUp.
-
-### Concurso
-Una competición de programación cronometrada donde los participantes resuelven una serie de problemas. Los concursos tienen horarios de inicio y finalización definidos, reglas de puntuación y pueden incluir características como participación virtual.
-
-### Curso
-Una ruta de aprendizaje estructurada que contiene tareas con problemas, organizadas por temas. Los cursos incluyen seguimiento del progreso y plazos.
-
-### Envío (Ejecutar)
-Código enviado por un usuario para resolver un problema. Cada envío se compila, se ejecuta frente a casos de prueba y se le asigna un veredicto.
-
-### Arena
-La interfaz del concurso donde los participantes resuelven problemas durante las competiciones. Proporciona un marcador en tiempo real, un editor de código y un sistema de envío.
+Dos cosas que vale la pena interiorizar antes de seguir leyendo. Primero, omegaUp son **dos repositorios que hablan a través de HTTP**, no uno: el monorepo de PHP ([`omegaup/omegaup`](https://github.com/omegaup/omegaup)) es la interfaz, la API y la aplicación web; la maquinaria de evaluación real (Grader, Runner, Broadcaster y Sandbox) se encuentra en el repositorio de Go [`omegaup/quark`](https://github.com/omegaup/quark), con problemas de almacenamiento en [`omegaup/gitserver`](https://github.com/omegaup/gitserver). Cuando esta página dice que el lado PHP "llama al Grader", significa un `curl` literal sobre `OMEGAUP_GRADER_URL`. En segundo lugar, gran parte de la antigua tradición wiki (HHVM, Smarty, un clasificador de 8 colas con nombres) está muerta; donde se ha movido la implementación de un término, la entrada lo dice.
 
 ---
 
-## Roles de usuario
+## El canal de envío {#the-submission-pipeline}
 
-### Concursante/Participante
-Un usuario que participa en un concurso o practica problemas.
+Estos son los componentes por los que pasa una sola presentación, aproximadamente en el orden en que los toca. Si solo lees una sección, lee ésta: es el lomo del que cuelga todo lo demás.
 
-### Planteador de problemas
-Un usuario que crea problemas a omegaUp. Los planteadores de problemas definen declaraciones, casos de prueba y validadores.
+### Arena {#arena}
 
-### Organizador del concurso
-Un usuario que crea y gestiona concursos. Puede agregar problemas, administrar participantes y configurar los ajustes del concurso.
+La Arena es la interfaz de usuario del concurso y la práctica: la pantalla de panel dividido donde un concursante lee un problema, escribe código en el editor integrado, lo envía y observa la actualización del marcador y las aclaraciones en vivo. **No** es un servicio separado (se presentó como uno para una hipotética "v2" hace años y nunca se dividió); hoy es Vue 2.7 simple ejecutándose en el navegador, con un punto de entrada TypeScript por modo en `frontend/www/js/omegaup/arena/`: `contest_contestant.ts` para un concurso en vivo, `contest_practice.ts` para [modo de práctica](#practice-mode) y `contest_virtual.ts` para un [concurso virtual](#virtual-contest). Todo lo que hace es una llamada API ordinaria: envía código a `/api/run/create/`, sondea `/api/contest/scoreboard/` y abre un socket [Broadcaster](#broadcaster) para actualizaciones push, de modo que no tiene que sondear para cada veredicto. Consulte [Arena](../features/arena.md) para conocer el recorrido orientado al usuario y [Arquitectura de interfaz](../architecture/frontend.md) para conocer cómo están conectados los puntos de entrada de Vue.
 
-### Administrador del curso
-Un usuario que administra cursos, asigna problemas, realiza un seguimiento del progreso de los estudiantes y revisa los envíos.
+### Ejecutar / Envío {#run-submission}
 
-### Asistente de enseñanza (TA)
-Un ayudante del curso que puede proporcionar revisiones de código y responder aclaraciones de los estudiantes.
+Una **presentación** es lo que envía el concursante (código fuente + idioma + qué problema y, si corresponde, qué concurso); una **ejecución** es el artefacto calificado que regresa. En la base de datos, estas son realmente dos tablas: `Submissions` contiene el código y los metadatos, `Runs` contiene el [veredicto](#verdict), la puntuación, el tiempo de ejecución y la memoria, porque un solo envío se puede calificar más de una vez (un [rejuicio](#rejudge) produce una nueva ejecución para el mismo envío). Todo es creado por `\OmegaUp\Controllers\Run::apiCreate` (`frontend/server/src/Controllers/Run.php`, alrededor de la línea 415), que es la función más instructiva del backend para leer: en una sola pasada valida que todos los campos obligatorios estén presentes, que el problema pertenece al concurso, que el [límite de tiempo](#time-limit) no haya expirado, que el usuario no esté excediendo la tasa de envío (`Run::$defaultSubmissionGap = 60` segundos entre envíos al mismo problema por defecto), y que el concurso es público o el usuario fue invitado explícitamente. Sólo después de todo eso se entrega al clasificador en la línea ~573 a través de `\OmegaUp\Grader::getInstance()->grade($run, trim($source))`. Cada ejecución se identifica mediante un `guid` opaco: esa es la identificación que ve en las URL y pasa a `/api/run/status/`.
 
-### Administrador del sistema (administrador de sistemas)
-Un usuario con acceso administrativo completo a la plataforma omegaUp.
+Un campo con el que te tropezarás: `submit_delay` es *el número de minutos desde que se abrió el problema (o comenzó el concurso) hasta que se envió el envío*, y es exactamente en lo que se convierte el marcador [penalización](#penalty). Es `0` para [práctica](#practice-mode) y para envíos públicos de problemas fuera de cualquier concurso; `submission_deadline` también es `0` cuando no estás dentro de un concurso.
 
----
+### Niveladora {#grader}
 
-## Términos técnicos
+El evaluador es el cerebro de la mitad evaluadora: un servicio Go en [`omegaup/quark`](https://github.com/omegaup/quark) (`cmd/omegaup-grader/`) que posee la cola de carreras pendientes y se las entrega a los [corredores](#runner). El backend de PHP nunca toca la cola directamente: solo le habla HTTP a través de `\OmegaUp\Grader` (`frontend/server/src/Grader.php`), presiona `OMEGAUP_GRADER_URL` (`https://localhost:21680` predeterminado) en `/run/new/{run_id}/` para poner en cola una nueva ejecución, `/run/grade/` para forzar un [rejuicio](#rejudge), `/broadcast/` para desplegar un mensaje a través del [Transmisor](#broadcaster) y `/grader/status/` para leer el estado de la cola. Esa carga útil de estado (`run_queue_length`, `runner_queue_length`, `runners`, `broadcaster_sockets`, `embedded_runner`) es lo que `\OmegaUp\Controllers\Grader::apiStatus` muestra en el panel de administración.
 
-### Calificador
-El microservicio Go que gestiona la cola de envío y coordina la evaluación. El calificador recibe envíos desde la interfaz, los asigna a los corredores y almacena los resultados.
+Dos hechos de implementación que importan y contradicen la antigua wiki. Primero, el modelo de cola tiene **cuatro niveles de prioridad, no ocho colas con nombre**: `grader/queue.go` define `QueuePriorityHigh (0)`, `QueuePriorityNormal (1)`, `QueuePriorityLow (2)` y `QueuePriorityEphemeral (3)` con `QueueCount = 4`; un envío de concurso normal ingresa en `QueuePriorityNormal`, y el nivel efímero es especial porque deliberadamente *no* persiste los resultados en el sistema de archivos (respalda el campo de juego "ejecutar este fragmento"). En segundo lugar, el clasificador asume que los corredores pueden morir: el `InflightMonitor` en `grader/queue.go` arma un `connectTimeout` y un `readyTimeout` de **10 minutos cada uno**, y si un corredor toma una carrera y luego se queda en silencio después de esa fecha límite, se presume muerto y la carrera se vuelve a poner en cola, se reintenta hasta `Config.Grader.MaxGradeRetries` veces antes de ser abandonada. Consulte [Conceptos internos del clasificador](../architecture/grader-internals.md) para conocer la máquina de estado completa.
 
-### Corredor
-Una instancia de servicio que compila y ejecuta código enviado por el usuario en un entorno limitado seguro. Varios corredores pueden operar en paralelo para manejar la carga de envío.
+### Corredor {#runner}
 
-### Minicárcel
-La zona de pruebas de Linux utilizada para la ejecución segura de código, bifurcada de Chrome OS. Proporciona aislamiento de procesos, filtrado de llamadas al sistema y límites de recursos.
+Un Runner es un trabajador de Go (también en `omegaup/quark`, `cmd/omegaup-runner/`) que realiza la compilación y ejecución real. **Extrae** el trabajo en lugar de ser forzado a hacerlo: sondea durante mucho tiempo el punto final `/run/request/` del Grader y, cuando se ejecuta, compila el código fuente y lo ejecuta en cada [caso de prueba](#test-case) dentro del [sandbox](#minijail-omegajail), transmitiendo los resultados. El mejor modelo mental, directamente de las notas de diseño originales, es que el Runner *sabe cómo compilar, ejecutar y alimentar entradas a un programa, y ​​comprobar si es correcto; es básicamente una bonita interfaz distribuida para el entorno de pruebas.* Muchos Runners se registran con un Grader y se les envía por turnos (hoy en día no hay afinidad, aunque existió en un momento y no sería difícil volver a agregarla). Si a un Runner se le entrega una ejecución pero no tiene el conjunto de entradas del problema almacenado en caché localmente, lo dice y el Grader vuelve a enviar la entrada `.zip`; si la compilación falla, elimina los archivos temporales y devuelve el stderr del compilador como [CE](#verdict). Consulte [Conceptos internos del corredor](../architecture/runner-internals.md).
 
-### Servidor Git
-El servicio que gestiona repositorios de problemas utilizando Git. Proporciona control de versiones, gestión de sucursales y servicio de contenido para problemas.
+### Minicárcel / omegacárcel {#minijail-omegajail}
 
-### Locutor
-El servidor WebSocket que ofrece actualizaciones en tiempo real a los clientes, incluidos cambios en el marcador, notificaciones de veredictos y aclaraciones.
+Esta es la zona de pruebas que hace que sea seguro ejecutar C++ de un extraño en su servidor. El linaje: **minijail** es el carcelero de procesos de bajo nivel (el binario enviado en `Dockerfile.minijail` como `minijail-xenial-distrib`), y **omegajail** es el envoltorio de omegaUp que lo rodea; en Runner es `OmegajailSandbox` (`runner/sandbox.go`), que desembolsa hasta `bin/omegajail` bajo un `omegajailRoot` con banderas como `--root`. Aplica el [tiempo](#time-limit) y los [límites de memoria](#time-limit), bloquea el acceso a la red y limita el sistema de archivos, por lo que un envío que intenta abrir un socket, fork-bomb o leer `/etc/passwd` simplemente no puede. Cuando un programa intenta una llamada al sistema prohibida, el sandbox lo cancela y la ejecución regresa [RFE](#verdict) (error de función restringida). Tenga en cuenta que se encuentra completamente en `omegaup/quark`, no en el repositorio de PHP: al realizar un grep del monorepo para `minijail` se obtienen cero resultados por diseño, porque la interfaz nunca lo invoca y solo ve el veredicto. Consulte [Zona de pruebas](../features/sandbox.md).
 
-### DAO (objeto de acceso a datos)
-Clases PHP que manejan interacciones de bases de datos. Los DAO proporcionan métodos para operaciones CRUD en tablas de bases de datos.
+### Locutor {#broadcaster}
 
-### VO (objeto de valor)
-Clases PHP que se asignan a tablas de bases de datos. Los VO representan registros de bases de datos individuales con propiedades escritas.
+The Broadcaster es el servicio de distribución en tiempo real (Go, `omegaup/quark`, `broadcaster/`). Cuando sucede algo que un concursante debería ver: llega un [veredicto](#verdict), se responde una [aclaración](#clarification), el [marcador](#scoreboard) cambia, el lado PHP llama a `\OmegaUp\Broadcaster`, que envía una PUBLICACIÓN al `/broadcast/` del evaluador, y el emisor envía ese mensaje a cada cliente conectado relevante para que el [Arena](#arena) se actualiza sin sondeo. "Relevante" se decide mediante filtros en `broadcaster/filter.go`: un `UserFilter`, un `ProblemFilter`, un `ProblemsetFilter`, un `ContestFilter` y un `AllEventsFilter` comodín, por lo que un mensaje para el concurso X solo llega a los sockets suscritos al concurso X. Habla dos transportes (`broadcaster/transport.go`): `WebSocketTransport` y un Repliegue `SSETransport`. Consulte [Arquitectura de emisora](../architecture/broadcaster.md) y [Actualizaciones en tiempo real](../features/realtime.md).
 
-### MVC (Modelo-Vista-Controlador)
-El patrón arquitectónico utilizado en la aplicación PHP de omegaUp. Los controladores manejan la lógica empresarial, los DAO/VO manejan los datos y las plantillas manejan la presentación.
+### GitServer {#gitserver}
 
-### Controlador
-Clases PHP que implementan puntos finales API y lógica empresarial. Ubicado en `frontend/server/src/Controllers/`.
+Los problemas se almacenan como **repositorios git**, un repositorio por problema, y GitServer ([`omegaup/gitserver`](https://github.com/omegaup/gitserver), Go) es lo que los sirve y versiona. Cada edición de una declaración, caso de prueba o [validador](#validator) es una confirmación, por lo que un problema tiene un historial completo y un concurso se puede anclar a una versión de problema específica incluso después de que el autor siga editando (consulte [Versión de problemas](../features/problem-versioning.md)). El lado PHP lo alcanza en `OMEGAUP_GITSERVER_URL` (`http://localhost:33861` predeterminado, de `OMEGAUP_GITSERVER_PORT`) autenticado con `OMEGAUP_GITSERVER_SECRET_TOKEN`. Consulte [arquitectura de GitServer](../architecture/gitserver.md).
 
 ---
 
-## Veredictos
+## Veredictos {#verdicts}
 
-### CA (Aceptado)
-La solución produce resultados correctos para todos los casos de prueba y pasa dentro de los límites de recursos.
+### Veredicto {#verdict}
 
-### PA (Parcialmente aceptado)
-La solución pasa algunos, pero no todos, los casos de prueba. Se utiliza con problemas de puntuación parcial.
+El resultado de una carrera en una palabra. La lista canónica y autorizada es `VerdictList` en `common/problemsettings.go` en `omegaup/quark`, y se almacena **ordenada de peor a mejor**; este orden tiene carga, porque cuando un envío se juzga caso por caso, el veredicto final es el veredicto del *peor* caso, por lo que "los peores tipos primero" es como lo elige el Runner:
 
-### WA (respuesta incorrecta)
-La solución produce resultados incorrectos para uno o más casos de prueba.
+`JE` → `CE` → `RFE` → `VE` → `MLE` → `RTE` → `TLE` → `OLE` → `WA` → `PA` → `AC` → `OK`
 
-### TLE (límite de tiempo excedido)
-La solución superó el límite de tiempo en uno o más casos de prueba.
+Cada uno:
 
-### MLE (límite de memoria excedido)
-La solución superó el límite de memoria durante la ejecución.
+- **`AC` (Aceptado)**: todos los casos son correctos dentro de los límites. El que tu quieras.
+- **`PA` (Parcialmente aceptado)**: algunos casos/[grupos](#test-group) aprobaron, otros no, y el [modo de puntuación](#score-mode) otorga crédito parcial.
+- **`WA` (Respuesta incorrecta)**: el resultado estaba bien formado pero era incorrecto en al menos un caso.
+- **`OLE` (límite de salida excedido)**: el programa imprimió más del [límite de salida] permitido (#time-limit); Runner también genera esto si un programa en una configuración interactiva hace que su padre se desborde.
+- **`TLE` (límite de tiempo excedido)**: se superó el [límite de tiempo] por caso (#time-limit).
+- **`RTE` (Error de tiempo de ejecución)**: falla: error de segmento, excepción no detectada, salida distinta de cero, división por cero.
+- **`MLE` (Límite de memoria excedido)**: superó el [límite de memoria](#time-limit).
+- **`VE` (Error del validador)**: el [validador] personalizado del problema (#validator) no pudo producir una puntuación utilizable (un error del autor del problema, no un error del concursante).
+- **`RFE` (Error de función restringida)**: el [sandbox](#minijail-omegajail) eliminó el programa por intentar una llamada al sistema prohibida, p. intentando abrir un socket de red.
+- **`CE` (Error de compilación)** — no se compiló; Se devuelve el stderr del compilador para que el concursante pueda ver por qué.
+- **`JE` (Error de evaluación)** — Fallo propio de omegaUp: datos de prueba incorrectos, un validador roto o problemas de infraestructura. Si ve esto, consulte los registros del calificador, no culpe al concursante.
+- **`OK`**: un marcador interno por caso "este caso funcionó bien" utilizado dentro del Runner, no un veredicto final de cara al usuario.
 
-### RTE (Error de tiempo de ejecución)
-La solución falló durante la ejecución (por ejemplo, falla de segmentación, división por cero, desbordamiento de pila).
-
-### CE (Error de compilación)
-El código no se pudo compilar. Causas comunes: errores de sintaxis, inclusiones faltantes, discrepancias de tipos.
-
-### JE (Error del juez)
-Se produjo un error interno durante la evaluación. Normalmente indica un problema con los datos de prueba o el validador.
-
-### OLE (límite de salida excedido)
-La solución produjo demasiada producción y superó el límite permitido.
+El veredicto llega a `Runs.verdict` y lleva al [Locutor](#broadcaster) a la [Arena](#arena). Consulte [Veredictos](../features/verdicts.md) para ver ejemplos prácticos de cada uno.
 
 ---
 
-## Puntuación del concurso
+## Concursos, cursos y su fontanería compartida {#contests-courses-and-their-shared-plumbing}
 
-### Estilo IOI
-Modelo de puntuación donde cada caso de prueba otorga puntos parciales. La puntuación final es la suma de puntos de todos los casos de prueba.
+### Concurso {#contest}
 
-### Estilo CIPC
-Modelo de puntuación donde los problemas valen la misma puntuación (normalmente 1). Se agrega tiempo de penalización por envíos incorrectos.
+Una competencia cronometrada sobre un conjunto de [problemas](#problem), propiedad de `\OmegaUp\Controllers\Contest`. Un concurso tiene una política estricta de `start_time`/`finish_time`, un [marcador](#scoreboard), un [modo de puntuación](#score-mode) y una [penalización](#penalty), un `admission_mode` (público o solo por invitación) y un `window_length` opcional: el reloj por concursante para "obtienes N minutos desde cuando *tú* empiezas", que devuelve `null` cuando el concurso no se configuró de esa manera. Tenga en cuenta que un concurso no almacena sus problemas directamente; apunta a un [conjunto de problemas](#problemset).
 
-### Penalización
-Deducción basada en el tiempo o en la presentación en concursos estilo ICPC. Normalmente 20 minutos por envío incorrecto.
+### Curso {#course}
 
-### Congelación del marcador
-Periodo previo al final del concurso en el que el marcador deja de actualizarse públicamente, generando suspenso por los resultados finales.
+Un contenedor estructurado y orientado a la clase: una secuencia de tareas, cada una de las cuales es en sí misma un [conjunto de problemas](#problemset), además de estudiantes, fechas límite, seguimiento del progreso y asistentes docentes opcionales. Propiedad de `\OmegaUp\Controllers\Course`. La división mental es que un **concurso es un evento de una sola vez** y un **curso es una clase continua**, pero debido a que ambos agrupan los problemas en conjuntos de problemas, comparten casi toda la maquinaria de presentación de ejecución, marcador y aclaración que se encuentra debajo.
 
-### Concurso virtual
-Simulando un concurso pasado en condiciones de tiempo originales. Permite practicar con concursos históricos.
+### Conjunto de problemas {#problemset}
 
----
+La abstracción que permite que los concursos y las tareas del curso reutilicen el mismo código. Un **conjunto de problemas** es simplemente "un conjunto de problemas que las personas enfrentan", identificado por `problemset_id`; un concurso *tiene* un conjunto de problemas y cada tarea del curso *es* un conjunto de problemas (`\OmegaUp\Controllers\Problemset`). Esta es la razón por la que una [ejecución](#run-submission) lleva un `problemset_id` en lugar de un `contest_id`: a la ejecución no le importa si se envía a un concurso o a una tarea, solo qué conjunto de problemas la rige. Si alguna vez se siente confundido acerca de por qué la lógica del concurso y del curso se ven tan similares, esta es la respuesta: son el mismo conjunto de problemas de plomería con tapas diferentes.
 
-## Componentes del problema
+### Aclaración {#clarification}
 
-### Declaración
-La descripción del problema, incluida la tarea, el formato de entrada/salida, las restricciones y los ejemplos.
+El canal de preguntas y respuestas del concurso. Un concursante hace una pregunta sobre un problema vía `\OmegaUp\Controllers\Clarification::apiCreate` (`frontend/server/src/Controllers/Clarification.php`); se almacena en la tabla `Clarifications` con un indicador `public`. Cuando un organizador responde, o lo marca como público, el controlador lo empuja a través del `\OmegaUp\Broadcaster` estático para que aparezca en vivo en la [Arena](#arena) de quienes preguntan (o en la de todos, si es pública) sin una actualización. La bandera `public` es el matiz importante: una aclaración privada va sólo a quien pregunta, una pública se transmite a todo el concurso para que todos vean la misma decisión.
 
-### Caso de prueba
-Un par de datos de entrada y resultados esperados utilizados para evaluar los envíos.
+### Marcador {#scoreboard}
 
-### Grupo de prueba
-Una colección de casos de prueba relacionados, a menudo con puntos compartidos. Se utiliza para la puntuación de subtareas.
+La clasificación en vivo. Construido en `frontend/server/src/Scoreboard.php` y, esta es la parte que la gente olvida, está **muy almacenado en caché** en Redis bajo claves distintas para las dos audiencias: `CONTESTANT_SCOREBOARD_PREFIX` (lo que ven los jugadores, respetando [congelación](#scoreboard-freeze)) y `ADMIN_SCOREBOARD_PREFIX` (la verdad no congelada para los organizadores), cada uno con un `..._EVENTS_PREFIX` paralelo para la línea de tiempo animada. La clasificación se ordena por puntos totales y luego por [penalización] total (#penalty), y cómo se agrega la penalización entre los problemas depende de `penalty_calc_policy` (`sum` agrega la penalización de cada problema; `max` toma solo la mayor). Debido a que es costoso volver a calcular, Arena escucha los empujones de [Broadcaster](#broadcaster) en lugar de volver a buscarlos constantemente.
 
-### Validador
-Un programa que verifica el resultado de la solución, especialmente para problemas con múltiples respuestas válidas.
+### Penalización {#penalty}
 
-### Problema interactivo
-Un problema donde la solución debe interactuar con un programa juez a través de E/S estándar.
+El tiempo de desempate en la puntuación al estilo ICPC: con puntos iguales, quien acumuló menos penalizaciones ocupará un lugar más alto. **Cuando** la penalización comienza a contar se establece mediante `penalty_type`, una enumeración con exactamente cuatro valores (`Contest.php`): `contest_start` (minutos contados desde el inicio del concurso), `problem_open` (desde que *ese concursante* abrió por primera vez *ese problema*), `runtime` (use el tiempo de ejecución real de la solución) y `none` (sin penalización alguna: carrera de puntuación pura). **Cómo** se agregan los problemas es el `penalty_calc_policy` separado (`sum` vs `max`) descrito en [Marcador](#scoreboard). El valor bruto por envío es el `submit_delay` de la ejecución; Los envíos incorrectos antes de los aceptados añaden una penalización fija adicional (convencionalmente, 20 minutos cada uno en las reglas del ICPC).
 
-### Generador
-Un programa que crea casos de prueba, generalmente para entradas grandes o aleatorias.
+### Modo de puntuación {#score-mode}
 
-### Subtarea
-Un subconjunto de casos de prueba con restricciones específicas, que permite un crédito parcial por soluciones más simples.
+Cómo los resultados por caso de un problema se resumen en un número, establecido por `score_mode` con tres valores (`Contest.php`): `all_or_nothing` (obtiene la máxima puntuación solo si cada caso es [AC](#verdict) - ICPC clásico), `partial` (suma los pesos de los casos/[grupos](#test-group) que aprobó - IOI clásico), y `max_per_group` (tomar el mejor resultado por grupo y sumarlos). Esto es lo que decide si una solución de medio derecho gana [PA](#verdict) y algunos puntos o solo [WA](#verdict) y cero.
 
----
+### Congelación del marcador {#scoreboard-freeze}
 
-## Configuración de problemas
+El mecanismo de suspenso: cerca del final de un concurso, el [marcador] público (#scoreboard) deja de actualizarse para los concursantes mientras los organizadores siguen viendo las clasificaciones en vivo, implementado como la división entre los cachés `CONTESTANT_SCOREBOARD_PREFIX` y `ADMIN_SCOREBOARD_PREFIX`. Las presentaciones todavía se juzgan normalmente; solo se lleva a cabo la *vista* pública, por lo que la revelación final es dramática y nadie puede aplicar ingeniería inversa a su posición exacta para jugar los últimos minutos.
 
-### Límite de tiempo
-Tiempo máximo de ejecución permitido por caso de prueba, en segundos (por ejemplo, 1,0 s, 2,0 s).
+### Modo de práctica {#practice-mode}
 
-### Límite de memoria
-Memoria máxima que puede utilizar la solución, en bytes o megabytes (por ejemplo, 256 MB).
+Una vez finalizado un concurso (o sobre cualquier problema público), puedes seguir enviando mensajes para aprender sin nada en juego. En `Run::apiCreate`, esta es la rama `isPractice`: `submit_delay` se fuerza a `0` y no se acumula [penalización](#penalty), y el acceso está controlado por `Problems::getPracticeDeadline` en lugar del reloj del concurso; envíelo después de esa fecha límite y será rechazado. El punto de entrada de Arena es `contest_practice.ts`. El punto es permitir que la gente resuelva viejos problemas sin contaminar ninguna clasificación en vivo.
 
-### Límite de salida
-El tamaño máximo de salida de la solución evita la impresión infinita.
+### Concurso virtual {#virtual-contest}
 
-### Tipo de validador
-Cómo se compara la salida: `token-caseless`, `token-numeric`, `literal` o `custom`.
+Volver a ejecutar un concurso terminado contra su reloj *original* para que puedas experimentarlo como si estuvieras compitiendo: los mismos problemas, la misma duración, pero cambiado al ahora y puntuado en un marcador privado que no toca los resultados históricos reales. Punto de entrada `contest_virtual.ts`. Es la forma honesta de "tomar" un concurso pasado para practicar bajo presión en tiempo real.
 
-### Visibilidad del problema
-Nivel de acceso: `private` (solo propietario), `public` (cualquiera) o específico del concurso.
+### Bloqueo {#lockdown}
+
+Un **cambio global de solo lectura para todo el sitio**, no una función anti-trampas por concurso. Cuando `OMEGAUP_LOCKDOWN` está activado, `\OmegaUp\Controllers\Controller::ensureNotInLockdown()` lanza `ForbiddenAccessException('lockdown')` desde cada punto final mutante, por lo que el sitio sigue ofreciendo lecturas pero rechaza escrituras, utilizadas durante migraciones o incidentes. Tiene un compañero `OMEGAUP_LOCKDOWN_DOMAIN` (por defecto `localhost-lockdown`). No lo confunda con las características de seguridad de los exámenes del concurso; éste es el interruptor de apagado del operador para escrituras.
 
 ---
 
-## Términos de API
+## Anatomía del problema {#problem-anatomy}
 
-### Punto final
-Una URL de API específica que maneja una operación particular (por ejemplo, `/api/Problem/create/`).
+### Problema {#problem}
 
-### Solicitar parámetro
-Datos enviados a un punto final de API, ya sea en la cadena de consulta de URL o en el cuerpo de la solicitud.
+La unidad atómica de contenido: una declaración, especificación de entrada/salida, restricciones, [casos de prueba](#test-case), límites y un [validador](#validator) opcional, almacenado como un repositorio de git en el [GitServer](#gitserver) y propiedad del lado PHP de `\OmegaUp\Controllers\Problem`. Todo lo demás (concursos, cursos, carreras) existe para que las personas se presenten ante los problemas.
 
-### Respuesta
-Datos JSON devueltos por un punto final de API, incluido el estado y los datos solicitados.
+### Caso de prueba {#test-case}
 
-### Token de autenticación
-La cookie `ouat` que identifica y autentica a los usuarios para solicitudes de API.
+Un archivo de entrada emparejado con su salida esperada. Un envío es [AC](#verdict) solo si satisface todos los casos de prueba dentro de [límites](#time-limit); el [veredicto](#verdict) del peor de los casos se convierte en el veredicto de la ejecución.
 
-### Limitación de velocidad
-Restricción de la frecuencia de llamadas a la API para evitar abusos. Los límites varían según el punto final.
+### Grupo de prueba {#test-group}
 
----
+Un conjunto de casos de prueba con nombre que puntúan juntos y se utiliza para la calificación de estilo de subtarea. La convención de nomenclatura es mecánica y vale la pena conocerla: el grupo de un caso es *todo antes del primer `.` en su nombre* (por lo tanto, `2.a`, `2.b`, `2.c` pertenecen al grupo `2`), y bajo `all_or_nothing`/`max_per_group` [puntuación](#score-mode) un grupo otorga sus puntos solo si Todo el grupo está satisfecho. Los pesos están normalizados para que sumen 1 o, de forma predeterminada, 1/(número de casos) cuando no se especifican.
 
-## Términos de infraestructura
+### Validador {#validator}
 
-### Redis
-Almacén de datos en memoria que se utiliza para el almacenamiento de sesiones, el almacenamiento en caché y la mensajería en tiempo real.
+Para problemas con más de una respuesta correcta (cualquier orden, tolerancia de punto flotante, "imprimir cualquier ruta más corta"), una diferencia de texto sin formato no sirve, por lo que el autor envía un programa **validador** que lee la salida del concursante y decide la puntuación. La estrategia de comparación es el [tipo de validador](#validator-type). Si el validador falla, la ejecución es [VE](#verdict), no [WA](#verdict); esa distinción le indica de quién es el error.
 
-### ConejoMQ
-Cola de mensajes utilizada para el procesamiento de tareas asincrónicas, como la generación de certificados.
+### Tipo de validador {#validator-type}
 
-### PHP-FPM
-PHP FastCGI Process Manager que maneja el procesamiento de solicitudes PHP.
+Cómo se verifica la salida. `token` / `token-caseless` compara token por token (opcionalmente ignorando mayúsculas y minúsculas), `token-numeric` compara números dentro de un épsilon (por lo que `1.0000001` coincide con `1.0`), `literal` exige una coincidencia exacta de bytes y `custom` entrega la decisión al programa [validador] del autor (#validator).
 
-### Nginx
-Servidor web y proxy inverso que enruta las solicitudes a los servicios backend apropiados.
+### Límite de tiempo / Límite de memoria / Límite de salida {#time-limit}
 
-### acoplador
-Plataforma de contenerización utilizada para entornos de desarrollo e implementación.
+Los tres límites máximos de recursos que el [sandbox](#minijail-omegajail) aplica por caso. **Límite de tiempo** es el tiempo de pared/CPU (incumplirlo produce [TLE](#verdict)); **límite de memoria** es el límite de espacio de direcciones en KiB (incumplirlo produce [MLE](#verdict)); El **límite de salida** limita la cantidad de bytes que un programa puede imprimir (al violarlo se produce [OLE](#verdict)), que existe por lo que un `while(true) printf(...)` infinito no puede llenar un disco. Estas son configuraciones por problema; la aplicación real son las banderas omegajail en `runner/sandbox.go`, no PHP.
 
 ---
 
-## Términos de desarrollo
+## Bloques de construcción de backend {#backend-building-blocks}
 
-### PR (solicitud de extracción)
-Un cambio de código propuesto enviado para revisión antes de fusionarse con la base de código principal.
+### Controlador {#controller}
 
-### CI (Integración continua)
-Pruebas automatizadas que se ejecutan en cada cambio de código para garantizar la calidad.
+Las clases PHP que implementan la API y contienen la lógica empresarial, en `frontend/server/src/Controllers/` bajo el espacio de nombres `\OmegaUp\Controllers`. Una convención que molesta a los recién llegados: los nombres de clases **eliminan el sufijo `Controller`**: el punto final de ejecución reside en la clase `Run` (`\OmegaUp\Controllers\Run` completamente calificado), no en `RunController`; así mismo `Contest`, `Problem`, `Clarification`, `Grader`. Los métodos API públicos tienen el prefijo `api…` (`apiCreate`, `apiStatus`).
 
-### Linter
-Herramienta que verifica el código en busca de estilo y posibles errores (por ejemplo, ESLint, Psalm).
+### ApiCaller/punto de entrada {#apicaller-entrypoint}
 
-### Migración
-Script de cambio de esquema de base de datos que actualiza la estructura de la base de datos.
+Cada solicitud de `/api/...` llega a `frontend/www/api/ApiEntryPoint.php`, donde `require` activa `frontend/server/bootstrap.php` y luego llama a `\OmegaUp\ApiCaller::httpEntryPoint()`. `ApiCaller` (`frontend/server/src/ApiCaller.php`) es el despachador: analiza la ruta, verifica el [token de autenticación](#authentication-token) e invoca el método `api…` del controlador correcto. Esa cadena (archivo de entrada → bootstrap → ApiCaller → `Controller::apiXxx`) es la puerta de entrada para todo el backend. Consulte [Arquitectura de backend](../architecture/backend.md).
 
-### Accesorio
-Datos de prueba utilizados para configurar un estado conocido para la prueba.
+### DAO (Objeto de acceso a datos) {#dao-data-access-object}
 
----
+La capa de acceso a datos generada. Cada tabla obtiene una base abstracta generada automáticamente en `frontend/server/src/DAO/Base/` (por ejemplo, `Base/Runs.php`, que contiene el SQL sin formato `INSERT`/`UPDATE`) además de un contenedor público editable manualmente en `frontend/server/src/DAO/` donde se encuentran las consultas personalizadas. La división existe, por lo que la regeneración del texto estándar nunca obstaculiza sus consultas personalizadas. El acceso es vía `mysqli` contra MySQL 8.0 (`MySQLConnection.php`). Consulte [Patrones de base de datos](../development/database-patterns.md).
 
-## Abreviaturas
+### VO (objeto de valor) {#vo-value-object}
 
-| Abreviatura | Término completo |
-|--------------|-----------|
-| API | Interfaz de programación de aplicaciones |
-| CRUD | Crear, leer, actualizar, eliminar |
-| CSRF | Falsificación de solicitudes entre sitios |
-| DAO | Objeto de acceso a datos |
-| GSoC | Verano de código de Google |
-| CIPC | Concurso Internacional de Programación Universitaria |
-| IIO | Olimpiada Internacional de Informática |
-| JSON | Notación de objetos JavaScript |
-| JWT | Ficha web JSON |
-| MVC | Modelo-Vista-Controlador |
-| DESCANSO | Transferencia de Estado Representacional |
-| SQL | Lenguaje de consulta estructurado |
-| TLS | Seguridad de la capa de transporte |
-| Voz | Objeto de valor |
-| WS | WebSocket |
-| XSS | Secuencias de comandos entre sitios |
+Los objetos de fila escritos por los que se mueven los DAO, en `frontend/server/src/DAO/VO/` (por ejemplo, `VO/Runs.php`). Un VO es un registro con propiedades escritas y un mapa `FIELD_NAMES`: usted recupera los VO de un DAO, los muta y se los devuelve al DAO para que persistan. Juntos **DAO + VO** son la forma en que el código base evita la escritura a mano de cadenas SQL en los controladores; la página [Patrón MVC](../architecture/mvc-pattern.md) tiene la imagen completa.
+
+### Token de autenticación {#authentication-token}
+
+La credencial que identifica a un usuario en llamadas API, contenida en la cookie `ouat` y validada por [`ApiCaller`](#apicaller-entrypoint). Debajo del capó, estos son tokens PASETO (`paragonie/paseto`), no las cadenas ad-hoc que describía la antigua wiki. Una llamada no autenticada a un punto final protegido devuelve un error de permiso, no una redirección, porque la API debe consumirse mediante programación.
+
+### Rejuzgar {#rejudge}
+
+Volver a ejecutar un [envío](#run-submission) existente para producir un [ejecución](#run-submission) nuevo: después de corregir un [caso de prueba](#test-case) incorrecto, se corrige un [validador](#validator) o se modifican los límites. El lado PHP lo activa llamando al punto final `/run/grade/` del Grader; en la [cola](#grader) un nuevo juez ingresa con una prioridad más baja para no privar a las presentaciones del concurso en vivo.
 
 ---
 
-## Documentación relacionada
+## Documentación relacionada {#related-documentation}
 
-- **[Descripción general de la arquitectura](../architecture/index.md)** - Arquitectura del sistema
-- **[Referencia de API](../api/index.md)** - Documentación de API
-- **[Veredictos](../features/verdicts.md)** - Información detallada del veredicto
-- **[Guías de desarrollo](../development/index.md)** - Recursos para desarrolladores
+- **[Grader internals](../architecture/grader-internals.md)**: la máquina de estado de cola, envío y reintento
+- **[Runner internals](../architecture/runner-internals.md)**: compila/ejecuta la canalización y la llamada de sandbox
+- **[Transmisor](../architecture/broadcaster.md)** y **[Actualizaciones en tiempo real](../features/realtime.md)**: cómo llegan las actualizaciones en vivo a la Arena
+- **[GitServer](../architecture/gitserver.md)** — problemas como repositorios de git
+- **[Arquitectura de backend](../architecture/backend.md)** y **[patrón MVC](../architecture/mvc-pattern.md)**: controladores, DAO/VO, el punto de entrada API
+- **[Veredictos](../features/verdicts.md)** — cada veredicto con ejemplos
+- **[Sandbox](../features/sandbox.md)** — aislamiento minijail/omegajail
+- **[Idiomas](languages.md)**: compiladores admitidos y claves de idioma

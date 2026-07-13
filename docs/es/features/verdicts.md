@@ -5,302 +5,72 @@ icon: bootstrap/check-circle
 ---
 # Veredictos y puntuación
 
-Esta página documenta todos los tipos de veredicto emitidos por el sistema de jueces omegaUp y explica los diferentes modelos de puntuación disponibles para concursos y problemas.
-
-## Tipos de veredicto
-
-### Veredictos de éxito
-
-| Veredicto | Código | Descripción |
-|---------|------|-------------|
-| **Aceptado** | `AC` | Todos los casos de prueba pasaron |
-| **Parcialmente aceptado** | `PA` | Algunos casos de prueba pasaron |
-
-### Veredictos de respuesta incorrecta
-
-| Veredicto | Código | Descripción |
-|---------|------|-------------|
-| **Respuesta incorrecta** | `WA` | El resultado no coincide con lo esperado |
-| **Error de presentación** | `PE` | Problemas con el formato de salida (espacios en blanco adicionales, etc.) |
-
-### Veredictos en tiempo de ejecución
-
-| Veredicto | Código | Descripción |
-|---------|------|-------------|
-| **Error de tiempo de ejecución** | `RTE` | El programa falló (error de segmento, excepción, etc.) |
-| **Límite de tiempo excedido** | `TLE` | Límite de tiempo excedido |
-| **Límite de memoria excedido** | `MLE` | Límite de memoria excedido |
-| **Límite de salida excedido** | `OLE` | Se genera demasiada producción |
-| **Función restringida** | `RFE` | Llamada al sistema prohibida usada |
-
-### Veredictos de compilación
-
-| Veredicto | Código | Descripción |
-|---------|------|-------------|
-| **Error de compilación** | `CE` | No se pudo compilar |
-
-### Veredictos del sistema
-
-| Veredicto | Código | Descripción |
-|---------|------|-------------|
-| **Error del juez** | `JE` | Error de calificación interno |
-| **Error del validador** | `VE` | El validador personalizado falló |
-
-## Jerarquía de veredictos
-
-Cuando varios casos de prueba tienen veredictos diferentes, el veredicto general sigue esta prioridad:
-
-```mermaid
-flowchart TD
-    JE[Judge Error] --> VE[Validator Error]
-    VE --> CE[Compilation Error]
-    CE --> RFE[Restricted Function]
-    RFE --> MLE[Memory Limit Exceeded]
-    MLE --> OLE[Output Limit Exceeded]
-    OLE --> TLE[Time Limit Exceeded]
-    TLE --> RTE[Runtime Error]
-    RTE --> WA[Wrong Answer]
-    WA --> PE[Presentation Error]
-    PE --> PA[Partial Accepted]
-    PA --> AC[Accepted]
-```
-## Modelos de puntuación
-
-### Todo o nada (`all_or_nothing`)
-
-Puntos otorgados sólo por la solución completa:
-
-```
-Score = 100% if ALL cases pass
-Score = 0%   otherwise
-```
-Lo mejor para:
-- Problemas simples
-- Problemas estilo IOI donde no se desea un crédito parcial
-
-### Crédito parcial (`partial`)
-
-Puntos proporcionales a los casos superados:
-
-```
-Score = (passing_cases / total_cases) × max_points
-```
-Lo mejor para:
-- Problemas con casos de prueba independientes.
-- Entornos educativos
-
-### Máximo por grupo (`max_per_group`)
-
-Puntos basados en grupos de casos de prueba:
-
-```
-Group Score = max_points × (passing_cases_in_group / total_cases_in_group)
-Total Score = sum(Group Scores weighted by group weights)
-```
-Lo mejor para:
-- Problemas con subtareas
-- Problemas estilo IOI con puntuación parcial
-
-## Grupos de casos de prueba
-
-### Definición de grupo
-
-Los grupos se definen en `settings.json` o se deducen de los nombres de archivos:
-
-```json
-{
-  "Cases": [
-    {
-      "Name": "small",
-      "Cases": ["1", "2", "3"],
-      "Weight": 30
-    },
-    {
-      "Name": "large",
-      "Cases": ["4", "5", "6"],
-      "Weight": 70
-    }
-  ]
-}
-```
-### Agrupación automática
-
-Sin grupos explícitos, los casos se agrupan por prefijo de nombre de archivo:
-
-```
-small.1.in  → Group "small"
-small.2.in  → Group "small"
-large.1.in  → Group "large"
-large.2.in  → Group "large"
-```
-### Archivo del plan de prueba
-
-Agrupación alternativa vía `testplan`:
-
-```
-# Format: group_name weight
-small 30
-large 70
-
-# Test cases (order matters for display)
-small.1
-small.2
-small.3
-large.1
-large.2
-large.3
-```
-## Modelos de penalización
-
-### Sin penalización (`none`)
-
-La puntuación se basa exclusivamente en la corrección:
-
-```
-Final Score = Best Score
-```
-### Penalización de tiempo de ejecución (`runtime`)
-
-Puntuación penalizada por tiempo de ejecución:
-
-```
-Final Score = Points × (1 - time_factor)
-```
-Donde `time_factor` se basa en el tiempo de ejecución relativo.
-
-### Penalización por recuento de envíos (`submission_count`)
-
-Penalización estilo ICPC:
-
-```
-Penalty = Σ(wrong_submissions × penalty_minutes + solve_time)
-```
-## Puntuación del concurso
-
-### Estilo IOI
-
-- Crédito parcial permitido
-- El mejor envío cuenta
-- No hay penalización por envío incorrecto
-
-```
-Total = Σ(max_score_per_problem)
-```
-### Estilo CIPC
-
-- Todo o nada por problema
-- Tiempo + penalización por envío incorrecto
-- Problemas que valen la misma puntuación.
-
-```
-Solved = count(AC_problems)
-Penalty = Σ(solve_time + wrong_attempts × 20)
-Rank by: Solved DESC, Penalty ASC
-```
-### Puntuación personalizada
-
-Configurable por concurso:
-
-| Configuración | Opciones |
-|---------|---------|
-| `score_mode` | `all_or_nothing`, `partial`, `max_per_group` |
-| `penalty` | `none`, `runtime`, `submission_count` |
-| `penalty_calc_policy` | `sum`, `max` |
-
-## Visualización del marcador
-
-### Representación de puntuación
-
-| Formato | Ejemplo | Cuando se usa |
-|--------|---------|-----------|
-| Puntos | `100.00` | Puntuación parcial |
-| Fracción | `3/5` | Todo o nada |
-| Hora | `45:30` | Penalización del CIPC |
-| Combinado | `100 (+2)` | IOI con intentos |
-
-### Codificación de colores
-
-| Color | Significado |
-|-------|---------|
-| 🟢 Verde | Aceptado / Puntuación completa |
-| 🟡 Amarillo | Puntuación parcial |
-| 🔴 Rojo | Sin puntuación / Respuesta incorrecta |
-| ⚪ Gris | Pendiente de sentencia |
-
-## Detalles del veredicto
-
-### Señales de error en tiempo de ejecución
-
-| Señal | Descripción |
-|--------|-------------|
-| SIGSEGV (11) | Fallo de segmentación |
-| SIGFPE (8) | Excepción de coma flotante |
-| SIGABRT (6) | Abortar (aserción fallida) |
-| SIGKILL (9) | Asesinado por el sistema |
-
-### Notas sobre el límite de tiempo
-
-- **Tiempo de CPU**: tiempo de cálculo real
-- **Wall Time**: tiempo real transcurrido (normalmente 2× límite de CPU)
-- TLE puede resultar de:
-  - Algoritmo lento
-  - Bucle infinito
-  - E/S excesiva
-
-### Notas sobre el límite de memoria
-
-- Medido a través de cgroups (RSS máximo)
-- Incluye:
-  - Asignaciones de montón
-  - Uso de la pila
-  - Variables estáticas
-- NO incluye:
-  - Bibliotecas compartidas
-  - segmento de código
-
-## Validadores personalizados
-
-### Interfaz del validador
-
-Los validadores personalizados reciben:
-
-```bash
-./validator <input_file> <expected_output> <user_output> <score_limit>
-```
-Y salida:
-
-```
-<score>
-<message>
-```
-Donde `score` está entre 0,0 y 1,0.
-
-### Casos de uso
-
-- Tolerancia de punto flotante
-- Múltiples salidas válidas
-- Verificación interactiva
-- Lógica de crédito parcial
-
-## Mejores prácticas
-
-### Para quienes plantean problemas
-
-1. **Utilice grupos significativos**: casos de prueba relacionados con grupos
-2. **Equilibrar pesos**: asegúrese de que las subtareas tengan la dificultad adecuada
-3. **Incluir casos extremos**: condiciones de contorno de prueba
-4. **Establezca límites apropiados**: no establezca límites demasiado estrictos ni demasiado flexibles
-
-### Para concursantes
-
-1. **Verifique todos los veredictos**: lea atentamente los mensajes de veredicto
-2. **Comprender la puntuación**: saber si hay crédito parcial disponible
-3. **Optimizar incrementalmente**: obtenga primero una puntuación parcial y luego optimice
-4. **Esté atento a los casos extremos**: fuente común de WA
-
-## Documentación relacionada
-
-- **[Grader Internals](../architecture/grader-internals.md)** - Cómo se determinan los veredictos
-- **[Runner Internals](../architecture/runner-internals.md)** - Detalles de ejecución
-- **[API de problemas](../api/problems.md)** - Configuración de problemas
-- **[API de concursos](../api/contests.md)** - Configuración de puntuación del concurso
+Cada envío que realiza termina su vida como un **veredicto**: un código corto que dice lo que
+sucedió cuando el evaluador ejecutó su programa en los casos de prueba del problema. el veredicto
+Lo que ves en la Arena es lo *peor* que pasó en todos los casos en los que el evaluador
+ejecutó: omegaUp informa la falla más grave, porque un programa se equivoca en un caso
+está mal, no importa cuántos otros hayan acertado.
+
+El veredicto se almacena en cada ejecución en la columna `verdict` de `Runs` y `Submissions`.
+tablas, y es uno de exactamente doce valores. Son, aproximadamente de mejor a peor:
+
+| Código | Nombre | Lo que significa |
+| ---- | ---- | ------------- |
+| `AC` | Aceptado | Todos los casos de la carrera pasaron. La máxima puntuación. |
+| `PA` | Aceptado parcialmente | Algunos grupos de casos aprobaron o un validador personalizado otorgó un crédito fraccionario. Su puntuación está estrictamente entre 0 y el máximo. |
+| `PE` | Error de presentación | La respuesta es esencialmente correcta, pero su formato está incorrecto. Un veredicto heredado: la mayoría de los problemas ahora utilizan validadores de tokens que ignoran los espacios en blanco, por lo que rara vez los verá. |
+| `WA` | Respuesta incorrecta | El programa se ejecutó hasta su finalización pero produjo un resultado que el validador rechazó. |
+| `TLE` | Límite de tiempo excedido | El programa no finalizó dentro del `time_limit` del problema (por ejemplo, 1000 ms). También en qué se convierte un punto muerto o una espera infinita en la entrada. |
+| `OLE` | Límite de salida excedido | El programa escribió más resultados de los permitidos, generalmente un bucle infinito con un `print` en su interior. |
+| `MLE` | Límite de memoria excedido | El programa intentó utilizar más que el `memory_limit` (por ejemplo, 32768 KiB). |
+| `RTE` | Error de tiempo de ejecución | El programa falló: un código de salida distinto de cero, una excepción no detectada, un error de segmentación, una señal. |
+| `RFE` | Error de función restringida | El programa intentó una llamada al sistema que el sandbox prohíbe (un socket, un fork, un archivo inesperado). Minijail lo atrapó y eliminó el programa. Consulte [Zona de pruebas](sandbox.md). |
+| `CE` | Error de compilación | El código no se compiló. Se devuelve el `stderr` del compilador para que pueda ver por qué: el único veredicto decidido antes de que se ejecute cualquier caso. |
+| `JE` | Error del juez | Algo salió mal *del lado de omegaUp*, no del suyo: un corredor murió en medio de la evaluación, faltaba un expediente del caso, surgió un error interno. Volver a enviarlo generalmente lo borra; si no es así, dínoslo. |
+| `VE` | Error del validador | El propio validador personalizado del problema falló o devolvió tonterías. Un error que plantea problemas, no un error de concursante. |
+
+## Por qué el veredicto es una decisión de grupo, no una decisión de caso
+
+Una sola ejecución es en realidad un lote de muchas ejecuciones (una por archivo `.in`) y cada ejecución
+obtiene su propio veredicto por caso dentro de la niveladora (`AC`, `WA`, `TLE`,…). el veredicto que usted
+Finalmente vemos que es el agregado, y la regla de agregación es donde se observa el comportamiento interesante.
+vidas, porque está directamente relacionado con la **puntuación**.
+
+casos de prueba de grupos omegaUp: todo lo que está antes del primer `.` en el nombre de archivo de un caso es su
+**grupo** (por lo que `3.foo.in` y `3.bar.in` pertenecen al grupo `3`; un caso sin punto, como
+`5.in`, forma su propio grupo `5`). Un grupo otorga sus puntos sólo si **todos** los casos en él
+volvió `AC` o `PA`: el modelo "todo o nada por subtarea" los problemas competitivos dependen
+adelante, donde una solución parcialmente correcta para una subtarea no genera nada para esa subtarea.
+
+Los pesos de los casos provienen del archivo `testplan` del problema, si tiene uno (normalizado para que sumen
+a 1); de lo contrario, cada caso vale `1 / number-of-cases`. La puntuación de la carrera es la suma de
+los pesos de los grupos que aprobaron completamente, multiplicados por los puntos que vale el problema
+en el concurso actual (o escalado al 100% en el modo de práctica). Entonces `PA` – una puntuación fraccionaria –
+es lo que obtienes cuando algunos grupos pasan y otros no, o cuando un validador personalizado te entrega
+devolver una puntuación parcial para un caso.
+
+Para la ruta completa que toma un envío desde `/api/run/create/` a través de las colas, el
+corredor, los validadores y de regreso al marcador, consulte [Partes internas del sistema](../architecture/internals.md)
+y [Partes internas del clasificador](../architecture/grader-internals.md).
+
+## Validadores: cómo un caso se convierte en AC o WA
+
+El evaluador decide el veredicto de cada caso con un **validador**. Los validadores incorporados
+tokenice el resultado esperado y el resultado del concursante en espacios en blanco y luego compare:
+
+- **`token`** — comparar token por token; la primera discrepancia (o una secuencia que termina antes de la
+  otro) es un `WA`. El valor predeterminado para la mayoría de los problemas.
+- **`token-caseless`**: lo mismo, pero no distingue entre mayúsculas y minúsculas.
+- **`token-numeric`**: ignora los tokens no numéricos, analiza el resto como punto flotante y
+  comparar con una tolerancia. Esto es lo que permite que un problema acepte `3.14159` donde dice la clave
+  `3.14160`.
+- **`literal`**: una coincidencia exacta, sin tokenización.
+- **`custom`** — el problema incluye su propio programa validador que lee la información del concursante.
+  salida (y, para algunos problemas, la entrada) y decide el veredicto en sí, opcionalmente
+  otorgar una puntuación parcial. Un fallo aquí es lo que produce `VE`.
+
+!!! nota "El veredicto informado es el más severo"
+    Cuando depures un envío, recuerda que el veredicto es el peor de los casos en todo el proceso.
+    correr. Una ejecución que muestra `TLE` puede estar resolviendo la mayoría de los casos correctamente y agotando el tiempo en uno grande.
+    uno: abra los detalles de la ejecución para ver el desglose por caso antes de concluir todo el proceso.
+    El enfoque es incorrecto.

@@ -7,7 +7,13 @@ icon: bootstrap/home
 
 # Bienvenido a la documentación de omegaUp
 
-omegaUp es una plataforma educativa gratuita que ayuda a mejorar las habilidades de programación, utilizada por decenas de miles de estudiantes y profesores en América Latina. Esta documentación proporciona guías completas para desarrolladores, contribuyentes y usuarios de la plataforma.
+omegaUp es una plataforma educativa gratuita y de código abierto creada en torno a un juez automático en línea: usted escribe una solución, la envía y en cuestión de segundos recibe un veredicto (`AC`, `WA`, `TLE` y el resto) porque un evaluador de espacio aislado realmente ha compilado y ejecutado su código en cada caso de prueba. Decenas de miles de estudiantes y profesores en toda América Latina lo utilizan todos los días para practicar, enseñar y competir, desde el entrenamiento para las olimpíadas nacionales hasta los niños que dan sus primeros pasos en **Karel**, el lenguaje de robot en una red que omegaUp admite específicamente para que un niño de diez años pueda aprender a programar antes de saber qué es un bucle `for` (junto con los lenguajes que esperarías: C, C++, Java, Python, C#, Go, Haskell, Lua, Pascal y Ruby).
+
+Estos documentos son para las personas que **construyen y ejecutan** esa plataforma: el colaborador que configura su entorno por primera vez, el desarrollador que rastrea cómo fluye realmente un envío a través del código y el operador que mantiene vivo el sitio en producción. Si solo desea *usar* omegaup.com para resolver problemas o realizar un concurso para su escuela, estará más feliz en el sitio mismo y en el [blog](https://blog.omegaup.com/), donde las funciones más nuevas se anuncian primero. Todo lo que aparece a continuación supone que deseas mirar debajo del capó.
+
+!!! resumen "El modelo mental de un párrafo"
+
+    omegaUp **no** es un programa único. Este repositorio, [`omegaup/omegaup`](https://github.com/omegaup/omegaup), es la **frontend de PHP 8.1 y monorepo API** (php-fpm detrás de nginx). Sirve un shell HTML delgado Twig 3 que inicia una aplicación de una sola página Vue 2.7 + TypeScript y expone cada característica como un punto final REST en `/api/`. **No** compila ni ejecuta su código. Cuando lo envía, el backend de PHP entrega la ejecución a través de HTTP a un **servicio Go Grader** completamente independiente (el proyecto [`omegaup/quark`](https://github.com/omegaup/quark): evaluador, corredor, emisora ​​y entorno de pruebas minijail), y los datos del problema residen en repositorios git administrados por un tercer servicio, [`omegaup/gitserver`](https://github.com/omegaup/gitserver). Saber en cuál de estos tres repositorios vive una cosa le ahorra horas; la mayor parte de esta documentación está organizada en torno a esa división.
 
 ## Inicio rápido
 
@@ -19,7 +25,7 @@ omegaUp es una plataforma educativa gratuita que ayuda a mejorar las habilidades
 
     ---
 
-    Configure su entorno de desarrollo y aprenda los conceptos básicos para contribuir a omegaUp.
+    Cree un omegaUp local completo con `docker-compose`, cree sus usuarios de prueba y realice su primera solicitud de extracción. El entorno está en contenedores precisamente para que no tenga que instalar manualmente PHP, MySQL, Redis y Go Grader usted mismo: el primer `docker-compose up` puede tardar unos minutos mientras se extraen las imágenes y se inicia la base de datos.
 
     [:octicons-arrow-right-24: Comenzar](getting-started/index.md)
 
@@ -27,23 +33,23 @@ omegaUp es una plataforma educativa gratuita que ayuda a mejorar las habilidades
 
     ---
 
-    Comprender la arquitectura del sistema, el patrón MVC y la estructura de componentes de omegaUp.
+    Siga un envío real de principio a fin: desde `OmegaUp.submit` en el navegador, pasando por `ApiEntryPoint.php` → `bootstrap.php` → `\OmegaUp\ApiCaller`, hasta `\OmegaUp\Controllers\Run::apiCreate` y a través de HTTP hasta el evaluador Go. Este es el mapa de cómo encajan los tres servicios.
 
     [:octicons-arrow-right-24: Más información](architecture/index.md)
 
-- :material-api:{ .lg .middle } __[Referencia API](api/index.md)__
+- :material-api:{ .lg .middle } __[Referencia API](reference/api.md)__
 
     ---
 
-    Documentación API completa para concursos, problemas, usuarios, ejecuciones y aclaraciones.
+    Cada página que representa la interfaz es solo una llamada autenticada a `/api/...`, por lo que la API puede hacer cualquier cosa que la interfaz de usuario pueda hacer. Conozca las reglas transversales (autenticación PASETO `auth_token`, transporte JSON y el sobre de respuesta `status`/`error`/`errorcode`) y luego siga la lista de puntos finales siempre actualizada y generada por el origen.
 
-    [API de exploración :octicons-arrow-right-24:](api/index.md)
+    [API de exploración :octicons-arrow-right-24:](reference/api.md)
 
 - :material-tools:{ .lg .middle } __[Guías de desarrollo](development/index.md)__
 
     ---
 
-    Pautas de codificación, estrategias de prueba, patrones de bases de datos y mejores prácticas de desarrollo.
+    Las reglas internas que mantienen coherentes 257 componentes de Vue y una gran base de código PHP: pautas de codificación (sí, "¡No uses jQuery!"), cómo ejecutar Psalm, PHPUnit, Jest y Cypress localmente, y cómo los clientes `api.ts` / `api_types.ts` generados mantienen los tipos de frontend y backend al mismo tiempo.
 
     [Guías de lectura :octicons-arrow-right-24:](development/index.md)
 
@@ -51,64 +57,61 @@ omegaUp es una plataforma educativa gratuita que ayuda a mejorar las habilidades
 
 ## ¿Qué es omegaUp?
 
-omegaUp es una plataforma educativa diseñada para ayudar a los estudiantes a mejorar sus habilidades de programación a través de:
+omegaUp existe para hacer que la práctica de programación deliberada sea gratuita y automática. Todo en la plataforma se basa en el juez en línea: la maquinaria que decide, objetivamente y en segundos, si una solución es correcta y lo suficientemente rápida:
 
-- **Resolución de problemas**: Miles de problemas de programación con evaluación automática
-- **Concursos**: organiza concursos de programación para tu escuela u organización
-- **Cursos**: rutas de aprendizaje estructuradas con problemas y tareas
-- **Entrenamiento**: Practicar problemas organizados por tema y dificultad
+- **Resolución de problemas**: una gran biblioteca de problemas de programación, cada uno con casos de prueba ocultos, un `time_limit` (comúnmente `1000` ms) y un `memory_limit` (comúnmente `32768` KiB), calificados automáticamente para que nadie tenga que revisar manualmente los envíos.
+- **Concursos**: organiza un concurso de programación cronometrado para tu escuela, universidad o club, con un marcador en vivo. Todo el tráfico del concurso está cifrado por una razón concreta: en un concurso de programación anterior, alguien husmeó la red para hacer trampa, por lo que *cada* comunicación con omegaUp se realiza a través de TLS.
+- **Cursos**: rutas de aprendizaje estructuradas que agrupan problemas en tareas, para que un profesor pueda desarrollar un semestre de práctica calificada.
+- **Entrenamiento**: practica problemas organizados por tema y dificultad para que cualquiera pueda subir de nivel por su cuenta.
 
 ## Secciones de documentación
 
 ### :material-school:{ .lg } [Introducción](getting-started/index.md)
-Todo lo que necesita para comenzar a desarrollar con omegaUp, incluida la configuración del entorno, pautas de contribución y dónde obtener ayuda.
+Todo lo que necesita para pasar de un clon nuevo a un sitio local en ejecución y una solicitud de extracción fusionada: la configuración de `docker-compose`, cuentas de prueba inicializadas (el administrador `omegaup`/`omegaup` y un `user`/`user` normal, además de los accesorios `test_user_0..9`), el flujo de trabajo de bifurcación y PR, y dónde obtener ayuda cuando el contenedor no arranca.
 
 ### :material-sitemap:{ .lg } [Arquitectura](architecture/index.md)
-Profundice en la arquitectura de omegaUp, incluido el patrón MVC, la estructura frontend/backend, el esquema de la base de datos y los componentes del sistema.
+Una inmersión profunda en cómo los tres servicios (el frontend/API de PHP, el evaluador Go (quark) y el servidor git) realmente mueven una solicitud a través de código real: la capa de controlador bajo `frontend/server/src/Controllers/`, la capa de acceso a datos DAO/VO generada automáticamente sobre MySQL 8.0 y la transferencia HTTP al clasificador en `OMEGAUP_GRADER_URL` (`https://localhost:21680` predeterminado).
 
-### :material-api:{ .lg } [Referencia API](api/index.md)
-Documentación completa de la API REST con autenticación, puntos finales, formatos de solicitud/respuesta y ejemplos de código.
+### :material-api:{ .lg } [Referencia API](reference/api.md)
+Las reglas de transporte, autenticación y sobre de respuesta que se aplican a cada punto final, además de la referencia del punto final generada en el origen. Debido a que `frontend/server/cmd/APITool.php` genera la lista a partir de los controladores PHP, no puede perder la sincronización con lo que el servidor realmente acepta.
 
 ### :material-code-braces:{ .lg } [Desarrollo](development/index.md)
-Guías para desarrolladores que cubren estándares de codificación, pruebas, patrones de bases de datos, desarrollo de componentes y guías de migración.
+Estándares de codificación, la cadena de herramientas de análisis estático y linting (Psalm para PHP, `prettier`/ESLint para TypeScript), pruebas en PHPUnit, Jest 26 y Cypress 15.7, bases de datos y patrones de migración, y cómo crear componentes de un solo archivo de Vue sin luchar contra las convenciones existentes.
 
 ### :material-feature-search:{ .lg } [Características](features/index.md)
-Documentación detallada para las funciones de omegaUp, incluidos problemas, concursos, arena, calificador, corredor e insignias.
+Funciones internas de función por función: cómo [Arena](features/arena.md) ofrece concursos, cómo [evaluador y corredor](features/sandbox.md) compila y ejecuta una presentación dentro de la minijail, qué significa cada [veredicto](features/verdicts.md), cómo [versión de problemas](features/problem-versioning.md) usa git y cómo [insignias](features/badges.md) y [Actualizaciones en tiempo real](features/realtime.md) funcionan.
 
 ### :material-server:{ .lg } [Operaciones](operations/index.md)
-Guías de implementación, configuración de nginx, monitoreo, resolución de problemas y administración de infraestructura.
+Ejecución de omegaUp en producción: configuración de nginx y php-fpm, la infraestructura Redis y RabbitMQ 3 de la que depende la aplicación, observabilidad a través de Prometheus y Monolog, y guías de solución de problemas para cuando algo se rompe.
 
 ### :material-account-group:{ .lg } [Comunidad](community/index.md)
-Información sobre Google Summer of Code, contratación y cómo contribuir a la comunidad omegaUp.
+Cómo convertirse en colaborador habitual, incluida la participación de larga data de omegaUp en [Google Summer of Code](community/gsoc/index.md).
 
-## Características clave
+## Hechos clave
 
-!!! consejo "Enfoque educativo"
-    omegaUp está diseñado específicamente para uso educativo, lo que lo hace ideal para escuelas, universidades y competencias de programación.
+!!! consejo "Educativo por diseño"
+    omegaUp está diseñado para aulas y competiciones, no solo para la práctica en solitario: existen cursos, tareas y marcadores de concursos para que un profesor pueda ejecutar un programa completo en ellos. Por eso es compatible con Karel: la plataforma se encuentra con los estudiantes donde estén, incluidos los que aún no han escrito código real.
 
-!!! éxito "Código Abierto"
-    omegaUp es de código abierto y agradece las contribuciones de la comunidad.
+!!! éxito "Código abierto, tres repositorios"
+    Se aceptan contribuciones de los tres: la interfaz/API de PHP en [`omegaup/omegaup`](https://github.com/omegaup/omegaup), la pila de calificación Go en [`omegaup/quark`](https://github.com/omegaup/quark) y el almacenamiento de problemas en [`omegaup/gitserver`](https://github.com/omegaup/gitserver). Verifique en qué repositorio reside un subsistema antes de buscar su código: el calificador y el sandbox **no** están en el monorepo de PHP.
 
-!!! información "Soporte multilingüe"
-    La plataforma admite múltiples lenguajes de programación, incluidos C, C++, Java, Python y más.
+!!! info "Calificación multilingüe"
+    Los envíos se pueden escribir en C, C++, Java, Python, C#, Go, Haskell, Lua, Pascal, Ruby y Karel. El evaluador compila cada uno en un entorno aislado y lo ejecuta en cada caso de prueba, luego lo califica.
 
-!!! Advertencia "Seguridad primero"
-    Toda la comunicación está cifrada y la plataforma incluye sólidas medidas de seguridad para la integridad del concurso.
+!!! advertencia "Todo está cifrado"
+    Toda la comunicación con omegaUp y sus subsistemas se realiza a través de TLS. Esto no es un teatro de seguridad: cifrar todo minimiza la posibilidad de hacer trampa en concursos (el tráfico *ha* sido olfateado en una competencia real), y con herramientas como Firesheep, hacerlo bien es barato y no negociable.
 
 ## Involúcrate
 
-- **Código de contribución**: consulte nuestra [Guía de contribución](getting-started/contributing.md)
-- **Informar problemas**: visite nuestros [Problemas de GitHub](https://github.com/omegaup/omegaup/issues)
-- **Unirse a las discusiones**: participe en las discusiones de nuestra comunidad
-- **Google Summer of Code**: consulte nuestro [programa GSoC](community/gsoc/index.md)
+- **Código de contribución**: comience con la [Guía de contribución](getting-started/contributing.md); el equipo de mantenimiento revisa cada RP según las [Pautas de codificación](development/index.md).
+- **Informar problemas**: abra uno en [github.com/omegaup/omegaup/issues](https://github.com/omegaup/omegaup/issues).
+- **Google Summer of Code**: omegaUp asesora a los estudiantes cada año; consulte el [programa GSoC](community/gsoc/index.md).
 
-## Recursos
-
-- **Sitio web**: [omegaup.com](https://omegaup.com)
+## Recursos- **Sitio web**: [omegaup.com](https://omegaup.com)
 - **Blog**: [blog.omegaup.com](https://blog.omegaup.com)
 - **Organización**: [omegaup.org](https://omegaup.org)
 - **GitHub**: [github.com/omegaup/omegaup](https://github.com/omegaup/omegaup)
 
 ---
 
-**¿Listo para comenzar?** Dirígete a [Cómo comenzar](getting-started/index.md) para configurar tu entorno de desarrollo.
+**¿Listo para comenzar?** Dirígete a [Cómo comenzar](getting-started/index.md) para abrir un omegaUp local con `docker-compose` y realizar tu primer cambio.

@@ -9,7 +9,7 @@ omegaUp proporciona capacidades integrales de gestión de concursos para organiz
 
 ## Tipos de concurso
 
-- **Concursos Públicos**: Abierto a todos los usuarios
+- **Concursos públicos**: Abierto a todos los usuarios
 - **Concursos privados**: restringido a participantes invitados
 - **Concursos virtuales**: comience en cualquier momento dentro de una ventana
 - **Estilo USACO**: Cronómetro individual por participante
@@ -26,5 +26,5 @@ omegaUp proporciona capacidades integrales de gestión de concursos para organiz
 ## Documentación relacionada
 
 - **[Gestión de concursos](managing-contests.md)** - Guía de gestión detallada
-- **[API de concursos](../api/contests.md)** - Puntos finales de API
+- **[API de concursos](../../reference/api.md)** - Puntos finales de API
 - **[Arena](../arena.md)** - Interfaz del concurso

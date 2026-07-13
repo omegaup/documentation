@@ -92,8 +92,6 @@ custom_fences = [
 "Features" = [
     { "Overview" = "features/" },
     { "Arena" = "features/arena.md" },
-    { "Grader" = "features/grader.md" },
-    { "Runner" = "features/runner.md" },
     { "Sandbox" = "features/sandbox.md" },
     { "Problem Versioning" = "features/problem-versioning.md" },
     { "Realtime Updates" = "features/realtime.md" },
@@ -118,29 +116,9 @@ custom_fences = [
     { "Components" = "development/components.md" },
     { "Database Patterns" = "development/database-patterns.md" },
     { "Migration Guide" = "development/migration-guide.md" },
+    { "Notifications" = "development/notifications.md" },
     { "Useful Commands" = "development/useful-commands.md" },
     { "GSoC page generation" = "development/gsoc-data-generation.md" },
-]
-
-[[project.nav]]
-"API Reference" = [
-    { "Overview" = "api/" },
-    { "REST API" = "api/rest-api.md" },
-    { "Authentication" = "api/authentication.md" },
-    { "Users" = "api/users.md" },
-    { "Problems" = "api/problems.md" },
-    { "Contests" = "api/contests.md" },
-    { "Runs" = "api/runs.md" },
-    { "Clarifications" = "api/clarifications.md" },
-    { "Groups" = "api/groups.md" },
-    { "Teams" = "api/teams.md" },
-    { "Schools" = "api/schools.md" },
-    { "Badges" = "api/badges.md" },
-    { "Certificates" = "api/certificates.md" },
-    { "Tags" = "api/tags.md" },
-    { "Quality Nominations" = "api/quality-nominations.md" },
-    { "Admin" = "api/admin.md" },
-    { "Error Codes" = "api/error-codes.md" },
 ]
 
 [[project.nav]]
@@ -172,6 +150,7 @@ custom_fences = [
     { "Glossary" = "reference/glossary.md" },
     { "Supported Languages" = "reference/languages.md" },
     { "Useful Links" = "reference/links.md" },
+    { "API Reference" = "reference/api.md" },
 ]
 
 

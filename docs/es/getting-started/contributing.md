@@ -5,102 +5,86 @@ icon: bootstrap/code-tags
 ---
 # Contribuyendo a omegaUp
 
-¡Gracias por su interés en contribuir con omegaUp! Esta guía lo guiará a través del proceso de envío de su primera contribución.
+¡Gracias por su interés en contribuir con omegaUp! Esta página lo guía a través de todo el ciclo de una contribución: bifurcar y clonar, mantener su copia local honesta antes de tocar algo, bifurcar, abrir una buena solicitud de extracción y corregir una después de haber impulsado algo de lo que no está orgulloso. Aquí nada es exótico: es el flujo de trabajo cotidiano que el equipo de mantenimiento realmente utiliza, con el razonamiento adjunto para que puedas improvisar de forma segura cuando tu situación no coincida con el camino feliz.
 
-## Descripción general del proceso de desarrollo
+Antes de escribir una línea de código, lo invitamos a leer las [Pautas de codificación](../development/coding-guidelines.md). Vale la pena internalizar pronto su estrella del norte: es preferible explicar *por qué* las cosas se hacen de la manera en que se hacen en lugar de *qué* hace el código. Seguirlos hace que su cambio sea mucho más fácil de leer y fusionar para un revisor, por lo que el esfuerzo se amortiza la misma semana.
 
-La rama `main` en tu bifurcación siempre debe mantenerse actualizada con la rama `main` del repositorio omegaUp. **Nunca te comprometas directamente con `main`**. En su lugar, cree una rama separada para cada cambio que planee enviar mediante una solicitud de extracción.
+## Por qué nunca te comprometes con `main`
+
+Después de bifurcar omegaUp, la rama `main` en su bifurcación siempre debe permanecer como un espejo byte por byte de la rama `main` de `omegaup/omegaup`, que contiene los últimos cambios que el equipo de revisión ya aprobó. Ésa es la razón de la regla que verá repetida en todas partes: **nunca se comprometa directamente con `main`**. Una vez que sus confirmaciones aterrizan en `main` y el `main` ascendente continúa, es realmente doloroso arrastrar su `main` a un estado limpio: termina rebasando, reiniciando o forzando su camino para salir de un hoyo que cavó sin ningún motivo. En su lugar, cree una rama separada para cada cambio que desee enviar como una solicitud de extracción y deje que `main` no haga más que realizar un seguimiento en sentido ascendente.
 
 ## Requisitos previos
 
 Antes de comenzar:
 
-1. ✅ [Configura tu entorno de desarrollo](development-setup.md)
-2. ✅ Lea las [Pautas de codificación](../development/coding-guidelines.md)
-3. ✅ Comprenda [cómo obtener ayuda](getting-help.md) si se queda atascado
+1. [Configure su entorno de desarrollo](development-setup.md)
+2. Lea las [Pautas de codificación](../development/coding-guidelines.md)
+3. Sepa [cómo obtener ayuda](getting-help.md) si se queda atascado
 
-## Requisito de asignación de problemas
+## Cada RP necesita un problema asignado
 
-!!! importante "Requerido antes de abrir PR"
-    Cada solicitud de extracción **debe** estar vinculada a un problema de GitHub existente que le esté **asignado**.
+!!! importante "Requerido antes de abrir un PR"
+    Cada solicitud de extracción **debe** estar vinculada a un problema de GitHub existente que le esté **asignado**. Esto no es burocracia en sí misma: es la forma en que el equipo evita que dos personas creen silenciosamente la misma solución, y esto se aplica mediante la automatización, por lo que un PR sin un problema asignado detrás no se puede fusionar sin importar cuán bueno sea el código.
 
-### Pasos para asignar el problema
+### Cómo asignar un problema
 
-1. **Buscar o crear un problema**:
-   - Examinar [problemas existentes](https://github.com/omegaup/omegaup/issues)
-   - O [crear una nueva edición](https://github.com/omegaup/omegaup/issues/new) describiendo la corrección de errores o la característica
+Primero, **busque o cree un problema**. Explore los [problemas existentes](https://github.com/omegaup/omegaup/issues) o, si está solucionando algo que nadie ha presentado todavía, [abra un nuevo problema](https://github.com/omegaup/omegaup/issues/new) que describa el error o la característica para que haya algo a lo que señalar su PR.
 
-2. **Expresar interés**:
-   - Comentar el tema expresando su interés en trabajar en él.
-   - Espere a que un mantenedor se lo asigne.
+Entonces **reclamalo**. omegaUp ejecuta el bot [`takanome-dev/assign-issue-action`](https://github.com/takanome-dev/assign-issue-action) con precisión para que no tenga que esperar a que un mantenedor haga clic en "asignar" en cada ticket. Comenta sobre el problema con:
 
-3. **Empiece a trabajar**:
-   - Una vez asignado, puedes crear tu sucursal y comenzar a codificar.
-   - Haga referencia al problema en su descripción de PR usando: `Fixes #1234` o `Closes #1234`
+- `/assign`: asígnese el problema usted mismo.
+- `/unassign`: elimínate del problema cuando no puedas continuar, para que otra persona pueda solucionarlo.
 
-!!! fracaso "Las relaciones públicas fracasarán sin la asignación de problemas"
-    Si su PR no está vinculado a un problema asignado, las comprobaciones automáticas fallarán y su PR no se podrá fusionar.
+El bot también puede ofrecer asignar el problema cuando su comentario deje claro que desea trabajar en ello.
 
-### Asignación automática (bot)
+Finalmente, haga referencia al problema en su descripción de relaciones públicas con `Fixes #1234` o `Closes #1234` (usando su número de problema real). GitHub lee esa línea y cierra el problema automáticamente en el momento en que su PR se fusiona, por lo que el rastreador se mantiene honesto sin que nadie lo arregle a mano.
 
-Este repositorio usa [`takanome-dev/assign-issue-action`](https://github.com/takanome-dev/assign-issue-action) para que puedas reclamar trabajo sin depender siempre de una asignación manual.
+!!! fracaso "Un RP sin problema asignado no pasará sus comprobaciones"
+    Si su PR no está vinculado a un problema que se le ha asignado, las comprobaciones automáticas fallan y el PR no se puede fusionar. Reclama el problema primero.
 
-**Comandos** (comenta en el issue de GitHub):
+### Los límites de asignación y por qué existen
 
-- `/assign` — te asigna el issue.
-- `/unassign` — te desasigna del issue.
+El bot impone algunos plazos para que los problemas reclamados pero abandonados no se pudran indefinidamente y bloqueen a otros contribuyentes:
 
-El bot también puede sugerir la asignación si tu comentario muestra interés en trabajar en el issue.
+- Puede tener como máximo **5** números asignados a usted a la vez en todo el repositorio. El límite evita que una sola persona acumule el trabajo atrasado.
+- Después de que te asignen, debes **abrir una solicitud de extracción** (un PR **borrador** cuenta) dentro de **7 días**. La ventana es lo que convierte el "ya lo haré" en un progreso real o en un asunto liberado.
+- Se publica un recordatorio aproximadamente a la mitad, aproximadamente **3,5 días**, por lo que una semana ocupada no le costará el problema por sorpresa.
+- Si no existe ningún PR antes del día 7, se le **desasignará automáticamente** y se le **bloqueará para que no pueda volver a asignarse el mismo problema**; Si aún lo deseas después de eso, pregúntale a un mantenedor.
 
-**Límites y plazos**
+Hay una excepción deliberada: si **usted fue el autor del problema** y ya tiene al menos **10 RP fusionados** en este repositorio, puede autoasignar sus propios problemas **sin** que cuenten contra el límite de 5 asignaciones activas: se ha ganado la confianza y es su problema. La regla de los 7 días para un PR todavía se aplica incluso entonces, y los problemas escritos por *otras* personas aún cuentan para su límite de 5.
 
-- Como máximo **5** issues asignados a la vez (en todo el repositorio).
-- Tras la asignación debes **abrir un pull request** (vale un PR en **borrador**) en un plazo de **7 días**.
-- A mitad de ese plazo (~3.5 días) se publica un recordatorio.
-- Si no hay PR al día 7, se te **desasigna automáticamente** y **no podrás volver a autoasignarte** en ese issue; pide ayuda a un mantenedor si aún lo necesitas.
+!!! consejo "No pierdas una tarea que pretendías conservar"
+    Comente `/assign` y luego abra un PR **borrador** el mismo día; eso satisface la regla de los 7 días de inmediato y le otorga todo el tiempo que necesita para terminar. Si realmente necesita más tiempo, solicite a un encargado de mantenimiento que agregue la etiqueta **`📌 Pinned`**, que exime al problema del barrido de desasignación automática.
 
-**Autores de issues con experiencia**
+## Configura tu bifurcación y tus controles remotos (una vez)
 
-- Si **tú creaste el issue** y tienes al menos **10 PR fusionados** en este repositorio, puedes autoasignarte **sin** que cuente el límite de 5 para issues **que tú abriste**.
-- La regla de los **7 días** (abrir PR tras la asignación) sigue igual.
-- En issues **creados por otras personas**, el límite habitual de **5** asignaciones activas aplica.
+Sólo haces esto una vez por clon. omegaUp usa los mismos dos nombres remotos que el flujo de trabajo de bifurcación estándar de GitHub, por lo que todos los tutoriales y herramientas de git que ya conoces siguen funcionando:
 
-**Consejos**
+- **`origin`**: tu bifurcación, `https://github.com/YOURUSERNAME/omegaup.git`: desde donde **empujas** ramas y abres solicitudes de extracción.
+- **`upstream`**: el repositorio canónico, `https://github.com/omegaup/omegaup.git`: desde donde **extraes** los cambios aprobados por el equipo de revisión.
 
-- Escribe `/assign` y abre pronto un borrador de PR para no perder la asignación.
-- Usa `/unassign` si no puedes continuar.
-- Si necesitas más tiempo, pide a un mantenedor la etiqueta **`📌 Pinned`** en el issue.
-
-## Configuración de su horquilla y controles remotos
-
-Solo necesitas hacer esto una vez. Los nombres siguen el **flujo habitual de forks en GitHub**:
-
-- **`origin`** — tu fork (`https://github.com/YOURUSERNAME/omegaup.git`): donde **empujas** ramas y desde donde abres pull requests.
-- **`upstream`** — el repositorio canónico (`https://github.com/omegaup/omegaup.git`): de donde **traes** los cambios oficiales.
-
-Algunas páginas antiguas de la wiki de omegaUp usaban los nombres al revés; en este sitio de documentación usamos la convención anterior.
+!!! nota "Las páginas wiki más antiguas intercambiaron estos nombres"
+    Algunas de las páginas wiki más antiguas de omegaUp usaban `origin` para el repositorio canónico y un segundo control remoto para la bifurcación, lo opuesto a la convención aquí. Este sitio sigue la convención estándar anterior (`origin` = tu bifurcación, `upstream` = canónico). Si está haciendo una referencia cruzada a una página antigua y un comando se lee al revés, ese es el motivo.
 
 ### 1. Bifurcar el repositorio
 
-Visite [github.com/omegaup/omegaup](https://github.com/omegaup/omegaup) y haga clic en el botón "Bifurcar".
+Visite [github.com/omegaup/omegaup](https://github.com/omegaup/omegaup) y haga clic en el botón **Fork** para crear su propia copia de `omegaup/omegaup`.
 
-### 2. Clona tu bifurcación
+### 2. Clona tu tenedor
 
 ```bash
 git clone https://github.com/YOURUSERNAME/omegaup.git
 cd omegaup
 ```
+### 3. Agregue `upstream` y verifique
 
-### 3. Añade `upstream` y comprueba los remotos
-
-El clon ya tiene **`origin`** apuntando a tu fork. Añade **`upstream`** una vez:
+Tu nuevo clon ya tiene `origin` apuntando a tu bifurcación. Agregue `upstream` para que pueda recuperar los cambios del repositorio canónico:
 
 ```bash
 git remote add upstream https://github.com/omegaup/omegaup.git
 git remote -v
 ```
-
-Deberías ver:
+Deberías ver exactamente esto: dos líneas para cada control remoto, `origin` en tu bifurcación y `upstream` en el repositorio canónico:
 
 ```
 origin     https://github.com/YOURUSERNAME/omegaup.git (fetch)
@@ -108,225 +92,232 @@ origin     https://github.com/YOURUSERNAME/omegaup.git (push)
 upstream   https://github.com/omegaup/omegaup.git (fetch)
 upstream   https://github.com/omegaup/omegaup.git (push)
 ```
-
-Si `origin` es incorrecto, corrígelo con:
+Si `origin` apunta a algún lugar incorrecto (más comúnmente porque clonaste la URL canónica en lugar de tu bifurcación), vuelve a señalarlo sin volver a clonar:
 
 ```bash
 git remote set-url origin https://github.com/YOURUSERNAME/omegaup.git
 ```
+## Mantenga su `main` actualizado antes de comenzar
 
-## Actualizando tu sucursal principal
-
-Mantén tu `main` local y el `main` de **tu fork** alineados con el `main` de **omegaUp**:
+Vale la pena repetirlo: no debes realizar cambios en `main`, porque es muy difícil devolverlo a un estado decente una vez que los cambios se han fusionado. Pero es una buena idea sincronizarlo de vez en cuando (siempre justo antes de realizar un nuevo cambio) para que su trabajo comience desde el mismo compromiso que está analizando el equipo de revisión:
 
 ```bash
-git checkout main
-git fetch upstream
-git pull --rebase upstream main
-git push origin main
+git checkout main               # Switch back to main if you were on a feature branch
+git fetch upstream              # Download the latest omegaup/main
+git pull --rebase upstream main # Replay upstream's commits under yours, keeping main linear
+git push origin main            # Update your fork's main to match
 ```
+!!! Advertencia "Si se rechaza `git push origin main`"
+    Un envío rechazado a `main` significa que rompió la regla y cometió algo directamente en `main`: su `main` y el `main` ascendente ahora han divergido. La solución limpia es mover esas confirmaciones a una rama de funciones y restablecer `main` a `upstream/main`; Pregúntele a un mantenedor si no está seguro de cómo hacerlo. Sólo si comprende exactamente lo que está descartando debe sobrescribir el `main` de su horquilla con `git push origin main --force-with-lease`. La verdadera lección es la que se encuentra en la parte superior de esta página: en primer lugar, no se comprometa con `main`; en su lugar, bifurque.
 
-!!! Advertencia "Si el push a main falla"
-    Si `git push origin main` falla porque hiciste commits directamente en `main`, pide ayuda para dejar la rama limpia o usa `git push origin main --force-with-lease` solo si entiendes el riesgo. En general, **no hagas commits en `main`**; usa una rama de trabajo.
+## Iniciar un nuevo cambio
 
-## Comenzando un nuevo cambio
+### 1. Bifurcación del último `main` ascendente
 
-### 1. Crear una rama de funciones
-
-Crea una rama desde el último `main` oficial:
+Cree su rama directamente desde `upstream/main` para que comience desde el código aprobado por la revisión, luego envíela a su bifurcación de inmediato para que haya un hogar para ella en GitHub:
 
 ```bash
 git fetch upstream
-git checkout -b feature-name upstream/main
-git push -u origin feature-name
+git checkout -b feature-name upstream/main   # New branch, synced with omegaUp's main
+git push -u origin feature-name              # Publish it to your fork; -u sets up tracking
 ```
-!!! consejo "Nombrar sucursales"
-    Utilice nombres de rama descriptivos como `fix-login-bug` o `add-dark-mode-toggle`.
+!!! consejo "Nombra la sucursal después del cambio"
+    Los nombres descriptivos como `fix-login-bug` o `add-dark-mode-toggle` indican a los revisores para qué sirve la sucursal de un vistazo y mantienen su propia lista de sucursales navegable meses después.
 
-### 2. Haga sus cambios
+### 2. Haz tus cambios
 
-- Escribe tu código siguiendo las [pautas de codificación](../development/coding-guidelines.md)
-- Escribe pruebas para tus cambios.
-- Asegurarse de que todas las pruebas pasen
+Escriba su código siguiendo las [pautas de codificación](../development/coding-guidelines.md), agregue pruebas para lo que cambió y asegúrese de que el conjunto existente aún pase. Un cambio con pruebas es un cambio en el que un revisor puede confiar.
 
-### 3. Confirme sus cambios
+### 3. Establece tu identidad de git (solo la primera vez)
+
+Si nunca has configurado git en esta máquina, hazlo una vez para que tus confirmaciones se atribuyan correctamente:
+
+```bash
+git config --global user.email "your-email@domain.com"
+git config --global user.name "your-username"
+```
+### 4. Comprometerse
 
 ```bash
 git add .
-git commit -m "Write a clear description of your changes"
+git commit -m "Write a clear description of what changed and why"
 ```
-!!! consejo "Confirmar mensajes"
-    Escriba mensajes de confirmación claros y descriptivos. Consulte [Confirmaciones convencionales](https://www.conventionalcommits.org/) para conocer las mejores prácticas.
+Un mensaje de confirmación que explica *por qué* se realizó el cambio, no solo *qué* archivo se movió, es la misma cortesía que las pautas de codificación solicitan en los comentarios de su código, y es lo que un revisor lee primero.
 
-### 4. Ejecutar validadores
+### 5. Ejecute los validadores antes de presionar
 
-Antes de presionar, ejecute el script linting:
+Ejecute el linter desde **fuera** del contenedor, en la raíz del repositorio:
 
 ```bash
 ./stuff/lint.sh
 ```
-Este comando:
-- Alinea elementos de código
-- Elimina líneas innecesarias
-- Realiza validaciones para todos los idiomas utilizados en omegaUp.
+Sin argumentos, `stuff/lint.sh` descubre qué archivos cambió (se diferencia de `upstream/main` o `origin/main` si no tiene un control remoto `upstream`) y ejecuta el paso `fix` solo sobre esos archivos, activando el contenedor `omegaup/hook_tools` fijado para realizar el formato real y las comprobaciones estáticas para cada idioma que usa omegaUp. Alinea el código, elimina las líneas muertas y valida. Si solo desea *verificar* sin reescribir archivos, pase `validate` explícitamente: `./stuff/lint.sh validate`.
 
-!!! nota "Ganchos de preempuje"
-    Este script también se ejecuta automáticamente a través de enlaces previos al envío, pero ejecutarlo manualmente garantiza que los cambios cumplan con los estándares.
+!!! nota "Debe ejecutarse fuera del contenedor"
+    `stuff/lint.sh` se niega a ejecutarse cuando su directorio de trabajo es `/opt/omegaup` (la ruta en la que se encuentra el código *dentro* del contenedor de desarrollo) e imprime `Running ./stuff/lint.sh inside a container is not supported.`. Necesita el Docker de su host para iniciar la imagen de las herramientas de enlace, así que ejecútelo desde el shell del host, no desde dentro de `docker exec`.
 
-### 5. Configurar el usuario de Git (solo la primera vez)
+!!! nota "El gancho de preempuje ejecuta esto por usted"
+    omegaUp instala un gancho git `pre-push` que ejecuta `stuff/lint.sh ... validate` automáticamente, por lo que un envío con errores de pelusa se detiene antes de que salga de su máquina. Ejecutar el linter usted mismo primero solo significa que encontrará y solucionará los problemas según su propio cronograma en lugar de que el push rebote.
 
-Si no ha configurado la información de usuario de Git:
+## Abrir la solicitud de extracción
 
-```bash
-git config --global user.email "your-email@domain.com"
-git config --global user.name "Your Name"
-```
-## Creando una solicitud de extracción
-
-### 1. Impulsa tus cambios
+### 1. Empuja tu rama
 
 ```bash
 git push -u origin feature-name
 ```
-El indicador `-u` configura el seguimiento entre su rama local y **`origin`** (su fork). Si ya empujó la rama al crearla, basta con `git push`.
+El indicador `-u` vincula su sucursal local con la sucursal en su bifurcación (`origin`), por lo que cada inserción posterior es simplemente `git push` sin argumentos: el seguimiento ya está configurado.
 
-### 2. Abrir solicitud de extracción en GitHub
+### 2. Abra el PR en GitHub
 
-1. Vaya a [github.com/YOURUSERNAME/omegaup](https://github.com/YOURUSERNAME/omegaup)
-2. Haga clic en "Sucursal" y seleccione su sucursal.
-3. Haga clic en "Solicitud de extracción"
-4. Complete la descripción del PR
+Vaya a su bifurcación en `https://github.com/YOURUSERNAME/omegaup`, use el selector de rama para cambiar a `feature-name` y haga clic en **Solicitud de extracción**. GitHub ofrecerá abrir el PR contra el `main` de `omegaup/omegaup`: ahí es exactamente donde lo desea.
 
-### 3. Plantilla de descripción de relaciones públicas
+### 3. Escribe la descripción
 
-La descripción de su PR debe incluir:
+Una buena descripción es lo que hace que sus relaciones públicas se revisen rápidamente. Incluya lo que hace el cambio, el problema que cierra, qué cambió realmente y cómo sabe que funciona:
 
 ```markdown
 ## Description
 Brief description of what this PR does.
 
 ## Related Issue
-Fixes #1234  <!-- Replace with your issue number -->
+Fixes #1234  <!-- Replace with your real issue number -->
 
 ## Changes Made
 - Change 1
 - Change 2
-- Change 3
 
 ## Testing
-Describe how you tested your changes.
+How you tested the change.
 
 ## Screenshots (if applicable)
-Add screenshots if your changes affect the UI.
+Before/after images for any UI change.
 ```
-!!! importante "Se requiere referencia del problema"
-    Incluya siempre `Fixes #1234` o `Closes #1234` en su descripción de PR. Esto cierra automáticamente el problema cuando se fusiona el PR.
+!!! importante "Siempre haga referencia al problema"
+    La línea `Fixes #1234` / `Closes #1234` no es una decoración opcional: es lo que vincula el PR con su problema asignado (satisfaciendo la verificación automatizada) y lo que cierra el problema automáticamente cuando el PR se fusiona.
 
-## Actualizando su solicitud de extracción
+## Actualizar un PR después de la revisión
 
-Si necesita realizar cambios después de crear el PR:
+Los revisores dejarán comentarios. Abordelos de la misma manera que realizó el cambio original: confirme en la misma rama y presione. Esta vez no hay `-u` porque la sucursal ya está rastreando `origin`:
 
 ```bash
 git add .
-git commit -m "Description of additional changes"
-git push  # No -u flag needed after first push
+git commit -m "Address review: <what you changed>"
+git push
 ```
-El PR se actualizará automáticamente con sus nuevas confirmaciones.
+El PR abierto se actualiza automáticamente con las nuevas confirmaciones y el revisor las ve la próxima vez que mira.
 
-## ¿Qué sucede después del envío?
+## Arregle un PR que ya impulsó
 
-1. **Verificaciones automatizadas**: GitHub Actions ejecutará pruebas y validaciones.
-2. **Revisión de código**: un mantenedor revisará su código
-3. **Comentarios de direcciones**: realice los cambios solicitados y envíe actualizaciones
-4. **Fusionar**: una vez aprobado, su PR se fusionará
-5. **Implementación**: los cambios se implementan los fines de semana.
+A veces presionas y solo entonces notas que la rama contiene tres confirmaciones "wip", "oops" y "typo", o la confirmación superior tiene un mensaje que preferirías no inmortalizar. Debido a que esta es *tu* rama de funciones y no un historial compartido, eres libre de reescribirla y forzarla. La única regla estricta es la misma que en el resto de esta página: **solo reescribe el historial en tu propia rama de funciones; nunca fuerces el envío a `main` en el repositorio canónico.**
 
-!!! info "Implementaciones de fin de semana"
-    Los RP fusionados se implementan en producción durante las implementaciones de fin de semana. Verá sus cambios en vivo después de la próxima implementación.
+### Cambiar solo el mensaje del último compromiso
 
-## Eliminando ramas
-
-Después de fusionar su PR:
-
-### Eliminar sucursal local
+Si el mensaje en su confirmación más reciente es incorrecto, modifíquelo; esto abre su editor en el mensaje existente:
 
 ```bash
-git branch -D feature-name
+git commit --amend
 ```
-### Eliminar rama remota
+Verás el mensaje actual seguido del texto de ayuda de git:
 
-1. Vaya a GitHub y haga clic en "Sucursales".
-2. Encuentra tu sucursal y haz clic en el ícono de eliminar.
+```
+Old commit message
 
-O usa Git:
+# Please enter the commit message for your changes. Lines starting
+# with '#' will be ignored, and an empty message aborts the commit.
+```
+Edite la línea superior, guarde y cierre. Confirme que fue necesario con `git log`, que ahora debería mostrar su nuevo mensaje contra esa confirmación. Si ya habías enviado la confirmación, el control remoto aún tiene la versión anterior, así que actualízala:
 
 ```bash
-git push origin --delete feature-name
+git push --force-with-lease
 ```
-### Limpiar referencias remotas
+`--force-with-lease` es la forma segura de `--force`: se niega a sobrescribir la rama remota si alguien más la presionó desde la última vez que la recuperó, por lo que una presión forzada nunca puede afectar silenciosamente el trabajo de un colaborador.
 
-Elimina referencias de seguimiento obsoletas (por ejemplo, tras borrar una rama en GitHub):
+### Elimina los compromisos desechables
 
-```bash
-git remote prune origin --dry-run  # Vista previa
-git remote prune origin             # Aplicar
-```
-
-## Corregir un pull request (commits o historial)
-
-Si ya empujaste commits y necesitas **aplanar**, **eliminar** o **editar** commits recientes, usa rebase interactivo y luego empuja con precaución:
-
-### Squash o fixup de los últimos `n` commits
+Para combinar una serie de confirmaciones desordenadas en una confirmación limpia, rebase interactivamente el último `n` de ellos:
 
 ```bash
 git rebase -i HEAD~n
 ```
+Reemplace `n` con la cantidad de confirmaciones que desea contraer. Git abre un editor que los enumera primero: los más antiguos:
 
-Sustituye `n` por cuántos commits quieres tocar. En el editor, deja el primero como `pick` y cambia el resto a `fixup` (o `f`). Guarda y cierra.
+```
+pick commit-1
+pick commit-2
+pick commit-3
+...
+pick commit-n
+```
+Mantenga el de arriba como `pick`, que es el compromiso cuyo mensaje sobrevive, y cambie cada línea debajo de `pick` a `fixup` (o simplemente `f`), lo que incorpora los cambios de ese compromiso en el de arriba y descarta su mensaje:
 
-Prefiere **`--force-with-lease`** para no sobrescribir trabajo ajeno por error:
+```
+pick  commit-1
+f     commit-2
+f     commit-3
+...
+f     commit-n
+```
+Guardar y cerrar. Luego publique la rama reescrita:
 
 ```bash
 git push --force-with-lease
 ```
+El PR ahora muestra una única confirmación ordenada en lugar del rastro de reparación y ninguno de los mensajes descartados aparece en el historial.
 
-### Cambiar solo el mensaje del último commit
+## Después de enviar
 
-Si el commit malo es el **último** y aún **no** lo has empujado:
+Una vez que el PR está abierto, se desarrolla una secuencia predecible. GitHub Actions ejecuta la batería completa de pruebas y validaciones; asegúrese de que todas sean verdes, ya que una marca roja es lo primero en lo que un revisor hará rebotar el PR. Luego, un miembro del equipo omegaUp revisa su código; aborde todo lo que generen enviando más compromisos a la misma rama. Una vez que se aprueba y se fusiona, hay una espera más: los RP fusionados pasan a producción en la **implementación del fin de semana**, por lo que su cambio se activa después del siguiente fin de semana en lugar de en el instante en que se fusiona.
+
+## Limpiar después de una fusión
+
+Una vez que su PR se fusiona, la sucursal habrá hecho su trabajo. Eliminarlo localmente:
 
 ```bash
-git commit --amend
+git branch -D feature-name
 ```
-
-Si ya lo empujaste:
+Elimínelo también en GitHub, ya sea desde la página **Sucursales**, desde el PR fusionado (GitHub ofrece un botón de eliminación) o desde la línea de comando:
 
 ```bash
-git commit --amend
-git push --force-with-lease
+git push origin --delete feature-name
 ```
+Incluso después de eliminar la rama remota, su repositorio local mantiene una referencia obsoleta de seguimiento remoto, que puede ver con `git branch -a`. Elimine esas referencias muertas para que `git branch -a` deje de enumerar ramas que ya no existen:
 
-!!! Advertencia "Reescribir historial público"
-    Reescribe historial solo en **tu** rama de trabajo. Nunca hagas force-push a `main` del repositorio canónico.
-## Configuraciones adicionales
+```bash
+git remote prune origin --dry-run  # Preview what would be pruned
+git remote prune origin            # Actually remove the stale references
+```
+## Problemas ambientales que puedes encontrar en el primer intento
 
-### Configuración regional
+Estos son los problemas de configuración con los que los contribuyentes primerizos suelen tropezar. Cada uno muestra el síntoma para que pueda comparar el suyo y luego la solución.
 
-Es posible que la máquina virtual no tenga `en_US.UTF-8` como configuración regional predeterminada. Para solucionar este problema, siga [esta guía](https://askubuntu.com/questions/881742/locale-cannot-set-lc-ctype-to-default-locale-no-such-file-or-directory-locale/893586#893586).
+### La configuración regional de la VM no es `en_US.UTF-8`
 
-### Dependencias del compositor
+La máquina virtual de desarrollo no viene con `en_US.UTF-8` como configuración regional predeterminada, algo de lo que se quejan algunas herramientas. Solucionarlo siguiendo [esta guía de Askubuntu](https://askubuntu.com/questions/881742/locale-cannot-set-lc-ctype-to-default-locale-no-such-file-or-directory-locale/893586#893586).
 
-En la primera configuración, instale las dependencias de PHP:
+### Faltan dependencias de PHP
+
+Una compra nueva no tiene directorio `vendor/`, por lo que faltan dependencias de PHP hasta que las instales:
 
 ```bash
 composer install
 ```
-### Configuración de MySQL
+### `FileNotFoundError: ... 'mysql'` al empujar
 
-Si encuentra errores de MySQL al enviar, instalar y configurar MySQL:
+Si su envío aborta con algo como esto:
+
+```
+FileNotFoundError: [Errno 2] No such file or directory: 'mysql'
+error: failed to push some refs to 'https://github.com/YOURUSERNAME/omegaup.git'
+```
+lo que le dice es que el enlace previo al envío intentó ejecutar el cliente `mysql` y no pudo encontrarlo: MySQL no está instalado en su host. El **servidor** MySQL se ejecuta dentro del contenedor de desarrollo, pero el cliente que invoca el enlace debe vivir en el host, **fuera** del contenedor. Instale ambos paquetes allí:
 
 ```bash
 sudo apt install mysql-client mysql-server
+```
+Luego apunte al cliente al MySQL del contenedor, que está publicado en el puerto **13306** (no el 3306 predeterminado, por lo que no choca con ningún MySQL que ya esté ejecutando):
 
+```bash
 cat > ~/.mysql.docker.cnf <<EOF
 [client]
 port=13306
@@ -337,19 +328,17 @@ password=omegaup
 EOF
 ln -sf ~/.mysql.docker.cnf .my.cnf
 ```
-## Recursos
+Con `.my.cnf` vinculado, el cliente lee esa configuración automáticamente y el enlace previo al envío puede llegar a la base de datos.
 
-- **[Pautas de codificación](../development/coding-guidelines.md)** - Nuestros estándares de codificación
-- **[Comandos útiles](../development/useful-commands.md)** - Referencia de comandos de desarrollo
-- **[Guía de pruebas](../development/testing.md)** - Cómo escribir y ejecutar pruebas
-- **[Cómo obtener ayuda](getting-help.md)** - Dónde hacer preguntas
+## Adónde ir a continuación
 
-## Próximos pasos
-
-- Revise la [Descripción general de la arquitectura](../architecture/index.md) para comprender el código base.
-- Consulte las [Guías de desarrollo](../development/index.md) para obtener guías detalladas.
-- Únase a nuestro [servidor de Discord](https://discord.gg/gMEMX7Mrwe) para conectarse con la comunidad
+- **[Pautas de codificación](../development/coding-guidelines.md)**: los estándares que hacen que sus relaciones públicas sean fáciles de revisar.
+- **[Comandos útiles](../development/useful-commands.md)**: la referencia de comandos de desarrollo diario.
+- **[Guía de pruebas](../development/testing.md)**: cómo escribir y ejecutar las pruebas que su PR necesita.
+- **[Cómo obtener ayuda](getting-help.md)**: dónde preguntar cuando estás atascado.
+- **[Descripción general de la arquitectura](../architecture/index.md)**: cómo encajan las piezas que estás cambiando.
+- Únase al [servidor de Discord](https://discord.gg/gMEMX7Mrwe) para hablar con la comunidad.
 
 ---
 
-**¿Listo para hacer tu primera contribución?** ¡Elige un problema, crea una rama y envía tu PR!
+**¿Listo para hacer tu primera contribución?** Reclama un problema, ramifica `upstream/main` y abre tu PR.

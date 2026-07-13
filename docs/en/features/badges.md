@@ -6,262 +6,82 @@ icon: bootstrap/award
 
 # Badges
 
-omegaUp includes a comprehensive badge system to recognize user achievements, milestones, and contributions to the platform.
+Badges are the small achievements omegaUp awards to users — "solved 100 problems",
+"coder of the month", "contest administrator". What makes them pleasant to work with is
+that a badge is almost entirely **declarative**: you don't write code that decides who
+earns it, you write a SQL query that *selects* who has earned it, drop it in a folder, and
+omegaUp does the rest. Implementing one is a well-worn path.
 
-## Overview
+## Adding a badge, step by step
 
-Badges are awarded automatically based on SQL queries that run periodically via cronjobs. Each badge has its own directory containing the query logic, localized descriptions, and test cases.
+1. **Pick an alias.** It must be unique and at most **32 characters**. Everything else is
+   named after it.
 
-## Badge Categories
+2. **Create its folder.** Make a directory in
+   [`frontend/badges/`](https://github.com/omegaup/omegaup/tree/main/frontend/badges) whose
+   name is exactly the alias. From here on this is your `badgeFolder`.
 
-### Problem Solving Milestones
+3. **Add an icon (optional).** If the badge has a custom icon, put its SVG in `badgeFolder`
+   as `icon.svg`.
 
-| Badge | Requirement | Description |
-|-------|-------------|-------------|
-| **100 Solved Problems** | Solve 100+ problems | Recognizes dedicated problem solvers |
-| **500 Score** | Achieve 500+ total score | Overall score milestone |
+4. **Write the awarding query.** Create `badgeFolder/query.sql` containing a single MySQL
+   `SELECT` that returns the `user_id`s of every user who should receive the badge. This
+   query *is* the badge's logic, so you need to know the shape of the data — keep the
+   [database schema](https://github.com/omegaup/omegaup/blob/main/frontend/database/schema.sql)
+   open while you write it, and aim for something simple and cacheable rather than clever.
 
-### Streak Badges
+5. **Add localizations.** Create
+   [`badgeFolder/localizations.json`](https://github.com/omegaup/omegaup/blob/main/frontend/badges/legacyUser/localizations.json)
+   with the badge's name and description translated into Spanish (`es`), English (`en`), and
+   Portuguese (`pt`). The name may be at most **50 characters**.
 
-| Badge | Requirement | Description |
-|-------|-------------|-------------|
-| **7-Day Streak** | Solve problems 7 consecutive days | One week consistency |
-| **15-Day Streak** | Solve problems 15 consecutive days | Two week dedication |
-| **30-Day Streak** | Solve problems 30 consecutive days | One month commitment |
+6. **Load the localizations.** Run `./stuff/lint.sh` so the strings in `localizations.json`
+   are propagated into the corresponding message files.
 
-### Language Expert Badges
+7. **Write the test.** Create `badgeFolder/test.json`. Its `testType` field chooses how the
+   badge's unit test runs:
 
-| Badge | Requirement | Description |
-|-------|-------------|-------------|
-| **C++ Expert** | Solve 10+ problems in C++ | C++ proficiency |
-| **Java Expert** | Solve 10+ problems in Java | Java proficiency |
-| **Python Expert** | Solve 10+ problems in Python | Python proficiency |
-| **Pascal Expert** | Solve 10+ problems in Pascal | Pascal proficiency |
-| **Karel Expert** | Solve 10+ problems in Karel | Karel proficiency |
+    - **`"testType": "apicall"`** — build the scenario by calling controller APIs to create
+      the data the badge depends on (problems, users, contests, runs, …). You describe it
+      with an `actions` array, whose entries can be:
+        - `changeTime` — move the system clock, so you can test time-dependent badges.
+        - `apicalls` — call a specific API, giving the calling user's username and password
+          and the parameters. The APIs are all the public static `api…` methods on the
+          controllers in
+          [`frontend/server/src/Controllers/`](https://github.com/omegaup/omegaup/tree/main/frontend/server/src/Controllers).
+        - `scripts` — run one of omegaUp's cron scripts (`aggregateFeedback`, `assignBadges`,
+          `updateUserRank`), which live in
+          [`stuff/cron/`](https://github.com/omegaup/omegaup/tree/main/stuff/cron).
 
-### Course Completion
+      End an `apicall` test with an `expectedResults` field listing the usernames that
+      should receive the badge. See
+      [`coderOfTheMonth/test.json`](https://github.com/omegaup/omegaup/blob/main/frontend/badges/coderOfTheMonth/test.json)
+      for a worked example.
 
-| Badge | Requirement | Description |
-|-------|-------------|-------------|
-| **C++ Course Graduate** | Complete C++ course | Course completion |
-| **Python Course Graduate** | Complete Python course | Course completion |
-| **Intro to Algorithms Graduate** | Complete algorithms course | Course completion |
-| **Intro to Algorithms 2 Graduate** | Complete advanced course | Course completion |
+    - **`"testType": "phpunit"`** — write a classic PHPUnit test named `<alias>Test.php`,
+      saved under
+      [`frontend/tests/badges/`](https://github.com/omegaup/omegaup/tree/main/frontend/tests/badges),
+      following the same structure as omegaUp's other unit tests (and free to use the
+      [factories](https://github.com/omegaup/omegaup/tree/main/frontend/tests/factories)).
 
-### Community & Contribution
+    Each has its trade-offs: prefer `phpunit` for a badge that would otherwise need many
+    near-identical API calls; otherwise `apicalls` is the lighter option.
 
-| Badge | Requirement | Description |
-|-------|-------------|-------------|
-| **Problem Setter** | Create a public problem | Content creator |
-| **Contest Manager** | Organize a contest | Contest organizer |
-| **Virtual Contest Manager** | Create virtual contests | Practice facilitator |
-| **Feedback Provider** | Submit quality nominations | Community contributor |
-| **Coder of the Month** | Be selected as Coder of the Month | Monthly recognition |
+8. **Run the tests** to confirm your query and test actually award the badge to the right
+   people:
 
-### Special Badges
+    ```bash
+    ./vendor/bin/phpunit --bootstrap frontend/tests/bootstrap.php \
+      --configuration frontend/tests/phpunit.xml frontend/tests/badges/ --debug
+    # or simply
+    ./stuff/runtests.sh
+    ```
 
-| Badge | Requirement | Description |
-|-------|-------------|-------------|
-| **Legacy User** | Account created before 2020 | Early adopter |
-| **Updated User** | Complete profile information | Profile completion |
-| **Problem of the Week** | Solve featured problem | Weekly challenge |
-| **Christmas Problem 2021** | Solve holiday problem | Event participation |
+9. **Open the pull request.** If nothing errored, your badge is ready — send it in.
 
-## Badge Implementation
+For reference, two merged badge PRs make good templates to follow:
+[Contest Administrator](https://github.com/omegaup/omegaup/pull/2602/files) and
+[Virtual Contest Administrator](https://github.com/omegaup/omegaup/pull/2603/files).
 
-### Directory Structure
-
-Each badge is defined in `frontend/badges/[badge-name]/`:
-
-```
-frontend/badges/
-├── 100solvedProblems/
-│   ├── icon.svg          # Badge icon
-│   ├── localizations.json # Translations
-│   ├── query.sql         # Award criteria
-│   └── test.json         # Test cases
-├── cppExpert/
-│   └── ...
-└── default_icon.svg      # Fallback icon
-```
-
-### Query Structure
-
-Badge queries return user IDs who qualify:
-
-```sql
--- Example: 100solvedProblems/query.sql
-SELECT DISTINCT
-    i.user_id
-FROM
-    Identities i
-INNER JOIN
-    (
-        SELECT
-            s.identity_id,
-            COUNT(DISTINCT s.problem_id) AS solved_count
-        FROM
-            Submissions s
-        INNER JOIN
-            Runs r ON s.current_run_id = r.run_id
-        WHERE
-            r.verdict = 'AC'
-        GROUP BY
-            s.identity_id
-        HAVING
-            solved_count >= 100
-    ) AS solved ON i.identity_id = solved.identity_id
-WHERE
-    i.user_id IS NOT NULL;
-```
-
-### Localization Format
-
-Multi-language support in `localizations.json`:
-
-```json
-{
-  "es": {
-    "name": "100 Problemas resueltos",
-    "description": "Otorgado a personas que han resuelto 100 problemas o más."
-  },
-  "en": {
-    "name": "100 Solved Problems",
-    "description": "User has solved 100 or more problems."
-  },
-  "pt": {
-    "name": "100 Problemas Resolvidos",
-    "description": "Concedido a pessoas que resolveram 100 ou mais problemas."
-  }
-}
-```
-
-### Test Cases
-
-Validation in `test.json`:
-
-```json
-{
-  "users": ["test_user_1", "test_user_2"],
-  "expected": {
-    "test_user_1": true,
-    "test_user_2": false
-  }
-}
-```
-
-## Badge Processing
-
-### Cronjob Execution
-
-Badges are awarded via the badge assignment cronjob:
-
-```bash
-# Run badge assignment
-python3 stuff/cron/assign_badges.py
-```
-
-### Processing Flow
-
-```mermaid
-sequenceDiagram
-    participant Cron as Cronjob
-    participant DB as Database
-    participant Badge as Badge Query
-    
-    Cron->>Badge: Load query.sql
-    Badge->>DB: Execute query
-    DB-->>Badge: Qualifying users
-    Badge->>DB: Check existing awards
-    Badge->>DB: Insert new awards
-    Badge->>Cron: Report new badges
-```
-
-## Badge Display
-
-### User Profile
-
-Badges appear on user profiles at `/profile/{username}/`:
-
-- Badge icon (SVG)
-- Localized name
-- Award date
-- Badge description on hover
-
-### Badge API
-
-Retrieve badges programmatically:
-
-```bash
-# Get all badges
-GET /api/Badge/list/
-
-# Get user's badges
-GET /api/Badge/myList/
-
-# Get specific user's badges
-GET /api/Badge/userList/?target_user={username}
-
-# Get badge details
-GET /api/Badge/badgeDetails/?badge_alias={alias}
-```
-
-## Creating New Badges
-
-### Step 1: Create Directory
-
-```bash
-mkdir frontend/badges/newBadgeName
-```
-
-### Step 2: Write Query
-
-Create `query.sql` that returns qualifying `user_id` values:
-
-```sql
-SELECT DISTINCT
-    i.user_id
-FROM
-    Identities i
-WHERE
-    -- Your criteria here
-    i.user_id IS NOT NULL;
-```
-
-### Step 3: Add Localizations
-
-Create `localizations.json`:
-
-```json
-{
-  "es": {
-    "name": "Nuevo Badge",
-    "description": "Descripción del badge."
-  },
-  "en": {
-    "name": "New Badge",
-    "description": "Badge description."
-  }
-}
-```
-
-### Step 4: Add Icon (Optional)
-
-Create `icon.svg` or use the default icon.
-
-### Step 5: Add Tests
-
-Create `test.json` with expected results.
-
-### Step 6: Test Locally
-
-```bash
-# Run badge tests
-python3 stuff/cron/assign_badges.py --dry-run --badge=newBadgeName
-```
-
-## Related Documentation
-
-- **[Badges API](../api/badges.md)** - API endpoints for badges
-- **[Database Patterns](../development/database-patterns.md)** - Query patterns
-- **[Cronjobs](../architecture/infrastructure.md)** - Background processing
+If anything is unclear while you build one, don't hesitate to reach out — see
+[Getting Help](../getting-started/getting-help.md).

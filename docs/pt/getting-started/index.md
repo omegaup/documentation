@@ -56,32 +56,33 @@ Se você é novo no omegaUp, recomendamos:
 
 ## Visão geral do ambiente de desenvolvimento
 
-omegaUp usa Docker para desenvolvimento local:
+omegaUp usa Docker para desenvolvimento local. Em alto nível:
 
-- **Web + API**: PHP e MySQL (MVC, APIs JSON)
-- **Juiz**: Go (grader/runner) e sandbox minijail
-- **UI**: Vue.js, TypeScript, Bootstrap 4
-- **Problemas**: gitserver e ZIP — ver [Problemas](../features/problems/index.md)
+- **Web + API**: controladores **PHP 8.1** e DAOs sobre **MySQL 8** (MVC clássico; APIs JSON)
+- **Juiz**: **Go** grader, runners e **minijail** sandbox — um serviço separado (`omegaup/quark`) que o back-end chama por HTTP
+- **IU do navegador**: componentes de arquivo único **Vue 2.7**, **TypeScript**, **Bootstrap 4**, renderizados dentro de um shell de servidor **Twig 3**
+- **Armazenamento de problemas**: **gitserver** e layout zip/case conforme documentado em [Recursos → Problemas](../features/problems/index.md)
 
-### Caminhos no repositório
+### Onde as coisas ficam no repositório (mapa rápido)
 
-| Área | Caminho |
-|------|---------|
-| API | `frontend/server/src/Controllers/` |
-| DAO | `frontend/server/src/DAO/` |
+| Área | Caminho (no repositório principal) |
+|------|--------------------------------|
+| API HTTP/regras de negócios | `frontend/server/src/Controllers/` |
+| Acesso ao banco de dados | `frontend/server/src/DAO/` |
 | Migrações | `frontend/database/` |
-| Vue/TS | `frontend/www/js/` |
-| Testes PHPUnit | `frontend/tests/controllers/` |
-| Cypress | `cypress/e2e/` |
+| TypeScript/Vue | `frontend/www/js/` |
+| Modelos legados/i18n | `frontend/templates/` |
+| Testes da API PHPUnit | `frontend/tests/controllers/` |
+| Cipreste E2E | `cypress/e2e/` |
 
-### Leituras
+### Artigos (contexto da arquitetura)
 
-- [omegaUp (IOI Journal, 2014)](http://www.ioinformatics.org/oi/pdf/v8_2014_169_178.pdf)
-- [libinteractive](https://ioinformatics.org/journal/v9_2015_3_14.pdf)
+- [omegaUp: Sistema de gerenciamento de concursos baseado em nuvem] (http://www.ioinformatics.org/oi/pdf/v8_2014_169_178.pdf) (IOI Journal, 2014)
+- [libinteractive](https://ioinformatics.org/journal/v9_2015_3_14.pdf) — tarefas interativas
 
-## Navegadores
+## Navegadores suportados (colaboradores e concorrentes)
 
-Use um navegador **atual** (Chrome, Firefox, Safari, Edge). Apenas **HTTPS**; IE antigo não é suportado.
+Use um navegador **evergreen** atual (**Chrome**, **Firefox**, **Safari** ou **Edge**). O site é **somente HTTPS**. Versões muito antigas do Internet Explorer **não** são suportadas.
 
 ## Contas de Desenvolvimento
 

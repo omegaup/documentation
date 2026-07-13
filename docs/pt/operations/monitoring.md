@@ -5,302 +5,135 @@ icon: bootstrap/chart-line
 ---
 # Monitoramento
 
-omegaUp usa várias ferramentas de monitoramento para rastrear a integridade, o desempenho e a confiabilidade do sistema em todos os serviços.
+omegaUp não é um programa, mas uma frota deles: o frontend PHP por trás do nginx, o classificador Go, seus executores, o transmissor e o gitserver, todos conversando com MySQL, Redis e RabbitMQ. Quando um concurso está no ar e alguns milhares de pessoas estão enfrentando os mesmos três problemas, "o site está bom?" deixa de ser uma pergunta sim/não e se torna "a fila está diminuindo, os executores estão vivos e algum método de API lança repentinamente 500?" Essa é a pergunta que a pilha de observabilidade existe para responder, e ela a responde com um conjunto pequeno e deliberadamente enfadonho de ferramentas: **Prometheus** para os números, **New Relic** para rastreamentos, erros e logs no contexto, e **Metabase** para produtos pós-fato e análise de dados. As próprias implantações são monitoradas pelo **Argo CD**, que reconcilia o que realmente está em execução no cluster Kubernetes com o que o Git diz que deveria estar em execução.
+
+Nada aqui é exótico de propósito. Cada serviço publica texto simples do Prometheus em um endpoint `/metrics`, cada solicitação PHP enriquece uma transação New Relic se o agente estiver presente e silenciosamente não faz nada se não estiver, e tudo se degrada para "ainda funciona, apenas cego" em um contêiner de desenvolvimento onde nenhum dos agentes está instalado.
 
 ## Visão geral
 
 ```mermaid
 flowchart TB
     subgraph Services
-        Frontend[Frontend/PHP]
+        Frontend["Frontend (PHP 8.1 / php-fpm)"]
         Grader[Grader]
         Runner[Runner]
         Broadcaster[Broadcaster]
-        GitServer[GitServer]
     end
-    
-    subgraph Metrics
-        Prometheus[Prometheus]
-        Grafana[Grafana]
+
+    subgraph Prometheus_side["Metrics (pull)"]
+        Prom[Prometheus scrapes /metrics]
     end
-    
-    subgraph Logging
-        Logs[Application Logs]
-        ELK[Log Aggregation]
+
+    subgraph NewRelic_side["New Relic (push)"]
+        APM[APM transactions + errors]
+        Logs[Logs in context]
+        RUM[Browser agent / RUM]
     end
-    
-    Frontend --> Prometheus
-    Grader --> Prometheus
-    Runner --> Prometheus
-    Broadcaster --> Prometheus
-    GitServer --> Prometheus
-    
+
+    Metabase[(Metabase — MySQL analytics)]
+
+    Frontend -->|/metrics.php| Prom
+    Grader -->|:6060/metrics| Prom
+    Runner -->|:6060/metrics| Prom
+    Broadcaster -->|:6060/metrics| Prom
+
+    Frontend -->|newrelic ext + Monolog| APM
     Frontend --> Logs
-    Grader --> Logs
-    
-    Prometheus --> Grafana
-    Logs --> ELK
+    Frontend -->|NEW_RELIC_SCRIPT in page head| RUM
+
+    MySQL[(MySQL 8.0)] --> Metabase
 ```
-## Coleção de métricas
+A divisão importante para manter em sua cabeça: **Prometheus puxa, New Relic empurra.** Prometheus estende a mão e raspa um ponto final que você expõe; O agente PHP da New Relic e o enriquecedor Monolog enviam dados de dentro da solicitação. É por isso que uma caixa com firewall ou sem agente ainda produz métricas do Prometheus (desde que o raspador possa alcançá-la), mas não produz nenhum dado do New Relic.
 
-### Métricas do avaliador
+## Prometeu: os números
 
-O Grader expõe métricas na porta `6060`:
+### A interface PHP
 
-```bash
-curl http://grader:6060/metrics
-```
-**Métricas principais**:
+A integração do frontend Prometheus é um único wrapper pequeno, `\OmegaUp\Metrics` em `frontend/server/src/Metrics.php`, construído no cliente `promphp/prometheus_client_php` (atualmente fixado em `^v2.4.0` em `composer.json`). Na construção, ele escolhe um adaptador de armazenamento com base na disponibilidade do APCu: `\Prometheus\Storage\APC` em produção (para que os contadores sobrevivam às solicitações na memória compartilhada do pool de trabalhadores php-fpm) e `\Prometheus\Storage\InMemory` como substituto, que redefine todas as solicitações e é realmente útil apenas em testes. Essa escolha é importante: se o APCu estiver faltando, seus contadores serão redefinidos silenciosamente a cada solicitação e suas taxas parecerão um ruído.
 
-| Métrica | Tipo | Descrição |
-|--------|------|-------------|
-| `grader_queue_length` | Medidor | Número de submissões em fila |
-| `grader_queue_total_wait_time_seconds` | Histograma | Tempo que os envios passam na fila |
-| `grader_runs_total` | Contador | Total de execuções processadas |
-| `grader_run_duration_seconds` | Histograma | Hora de processar cada execução |
-| `grader_runners_available` | Medidor | Número de corredores disponíveis |
-| `grader_runners_total` | Medidor | Total de corredores inscritos |
+Há exatamente um lugar que grava métricas de aplicativos hoje: o próprio funil de solicitação. `\OmegaUp\ApiCaller::call()` (`frontend/server/src/ApiCaller.php`) chama `\OmegaUp\Metrics::getInstance()->apiStatus($methodName, $status)` duas vezes: uma vez no caminho de sucesso com status `200` e uma vez no caminho de falha com o código HTTP da exceção de API real. Cada chamada atinge dois contadores:
 
-### Métricas do corredor
+- `frontend_api_request_status_count{api, status}` — um contador digitado pelo nome do método API (por exemplo, `/api/run/create/` aparece como o método) **e** o código de status resultante, para que você possa perguntar "quantos 401s `run.create` lançou nos últimos cinco minutos" com um único `rate()`.
+- `frontend_api_request_total{api}` — a mesma coisa sem o rótulo de status, ou seja, total de chamadas por método, que é o denominador quando você deseja uma *proporção* de erro em vez de uma *contagem* de erro.
 
-Cada corredor reporta seu status ao avaliador:
+Esses dois são suficientes para calcular os dois sinais que realmente prevêem uma interrupção: taxa de solicitação por endpoint e a fração deles que não são `200`. Não há histograma de latência por endpoint no lado do PHP hoje - a latência reside no New Relic (veja abaixo), porque é aí que você também obtém o gráfico em degradê para explicar *por que* uma chamada foi lenta, o que um número simples do Prometheus não pode fornecer.
 
-| Métrica | Descrição |
-|--------|------------|
-| `runner_cpu_usage` | Utilização atual da CPU |
-| `runner_memory_usage` | Consumo de memória |
-| `runner_executions_total` | Total de execuções realizadas |
-| `runner_compilation_errors` | Falhas de compilação |
+O Prometheus raspa o frontend em `frontend/www/metrics.php`, que é o mais fino que uma página pode ter: requer `bootstrap.php` e chama `\OmegaUp\Metrics::getInstance()->render()`. `render()` define `Content-type: text/plain` (via `\Prometheus\RenderTextFormat::MIME_TYPE`) e ecoa o formato de exposição. Aponte um trabalho de raspagem para esse caminho e pronto.
 
-### Métricas de Aplicação (PHP)
+### O aluno
 
-Métricas de aplicativos PHP rastreadas:
+O avaliador é o componente que você realmente observa durante uma competição e é o mais instrumentado. Suas métricas residem no repositório Go `omegaup/quark` em `cmd/omegaup-grader/metrics.go`, servido por `promhttp.Handler()` em uma porta dedicada – `Metrics.Port`, cujo padrão é `6060` (consulte `MetricsConfig` em `common/context.go`). Tudo tem o namespace `quark` com o subsistema `grader`, portanto, os nomes dos fios são `quark_grader_*`.
 
-| Métrica | Descrição |
-|--------|------------|
-| `http_requests_total` | Total de solicitações HTTP por endpoint |
-| `http_request_duration_seconds` | Solicitar histograma de latência |
-| `api_errors_total` | Contagem de erros de API por tipo |
-| `db_query_duration_seconds` | Tempos de consulta ao banco de dados |
-| `cache_hits_total` | Taxa de acerto do cache Redis |
+Os medidores de fila são o centro disso, e há um por nível de prioridade porque o avaliador mantém filas separadas em vez de uma grande:
 
-## Configuração do Prometheus
+| Métrica | O que isso diz a você |
+|--------|-------------------|
+| `quark_grader_queue_total_length` | Tudo esperando, em todas as filas. O único número para alertar. |
+| `quark_grader_queue_high_length` | Backlog de alta prioridade – envios interativos/concursos que as pessoas estão olhando. |
+| `quark_grader_queue_normal_length` | Backlog de prioridade normal. |
+| `quark_grader_queue_low_length` | Backlog de baixa prioridade (rejulgamentos e outros trabalhos em massa que não devem privar as filas ativas). |
+| `quark_grader_queue_ephemeral_length` | A fila efêmera, usada pelas execuções scratch "run this in the arena" que nunca tocam o banco de dados. |
 
-Exemplo de configuração de raspagem do Prometheus:
+Junto com cada fila está um resumo, `quark_grader_queue_delay_seconds` (e o `quark_grader_queue_{high,normal,low,ephemeral}_delay_seconds` por camada), que mede quanto tempo uma corrida ficou na fila antes de um corredor retirá-la. Eles são exportados com objetivos quantílicos `0.5`, `0.9` e `0.99` (os alvos `{0.5: 0.05, 0.9: 0.01, 0.99: 0.001}` no código), então `quark_grader_queue_delay_seconds{quantile="0.99"}` é sua espera p99 - o número honesto "quão ruim é para o remetente mais azarado no momento", que é exatamente o que importa quando o comprimento da fila parece bom em média, mas alguns envios estão presos por um problema lento.
 
-```yaml
-# prometheus.yml
-global:
-  scrape_interval: 15s
-  evaluation_interval: 15s
+O rendimento e a integridade vêm de contadores e de um vetor de medidor:
 
-scrape_configs:
-  - job_name: 'grader'
-    static_configs:
-      - targets: ['grader:6060']
-    
-  - job_name: 'broadcaster'
-    static_configs:
-      - targets: ['broadcaster:6061']
-    
-  - job_name: 'gitserver'
-    static_configs:
-      - targets: ['gitserver:6062']
-    
-  - job_name: 'frontend'
-    static_configs:
-      - targets: ['frontend:9090']
-```
-## Principais painéis
+- `quark_grader_runs_total` — cada corrida graduada. Seu `rate()` é o seu envio por segundo.
+- `quark_grader_ephemeral_runs_total`, `quark_grader_ci_jobs_total` — as variantes de execução temporária e CI problemático, contadas separadamente para que a atividade de CI em massa não se disfarce como carga de concurso.
+- `quark_grader_runs_retry`, `quark_grader_runs_abandoned` — uma corrida é repetida quando seu corredor desaparece no meio da rampa; ele é *abandonado* quando tentar novamente não ajuda. Um `runs_abandoned` crescente é a métrica que diz que “as execuções estão sendo descartadas silenciosamente”, o que é muito pior do que uma fila lenta.
+- `quark_grader_runs_je` — execuções que terminaram com um veredicto `JE` (Erro do Juiz). Isso deve ser zero; qualquer inclinação significa que a própria motoniveladora está quebrada, e não o código enviado.
+- `quark_grader_runner_up{runner_hostname, runner_public_ip}` — um medidor definido como `1` para cada corredor de quem o avaliador ouviu falar recentemente. O avaliador considera um corredor vivo somente se ele tiver feito check-in nos últimos 3 minutos (o ponto de corte `-3 * time.Minute` em `gaugesUpdate`); uma vez que um corredor fica obsoleto, todo o vetor é `Reset()` e repovoado, então um corredor que morre simplesmente desaparece da série. Resumir esse medidor fornece a contagem de corredores ao vivo, e observá-la cair é como você pega um anfitrião de corredor caindo antes que a fila recue visivelmente.
 
-### Painel do avaliador
+A niveladora também exporta sinais vitais do host como `os_cpu_load1` / `os_cpu_load5` / `os_cpu_load15`, `os_mem_total` / `os_mem_used` e `os_disk_total` / `os_disk_used`, atualizados uma vez por minuto por um ticker em `gaugesUpdate()` (via `gopsutil` do `load`, auxiliares `mem` e `disk`). `disk_used` subindo em direção a `disk_total` é o clássico eliminador de niveladoras silenciosas – a caixa se enche de entradas de problemas e paradas de nivelamento – então ele ganha seu próprio medidor.
 
-Monitore o processamento de envio:
+Um endpoint extra que vale a pena conhecer: junto com `/metrics`, o avaliador atende `/metrics/runners`, que retorna uma lista JSON dos executores atualmente ativos no formato Prometheus **descoberta de serviço de arquivo** (`targets` + `labels`, novamente usando o corte de atualização de 3 minutos). É assim que o Prometheus aprende quais caixas de corredores devem ser raspadas sem que ninguém edite manualmente uma lista de alvos toda vez que a frota de corredores aumenta ou diminui.
 
-- **Profundidade da fila**: envios atuais aguardando
-- **Taxa de processamento**: execuções por minuto
-- **Utilização de executores**: executores ativos versus inativos
-- **Distribuição do veredicto**: detalhamento de AC/WA/TLE
-- **Tempo Médio de Espera**: Tempo na fila
+### O corredor e o locutor
 
-### Painel do concurso
+Cada executor expõe seu próprio `/metrics` (mesmo namespace `quark`, subsistema `runner`). As séries de suporte de carga são `quark_runner_validator_errors` (uma contagem crescente aqui significa que os validadores personalizados estão travando, o que silenciosamente transforma envios corretos em veredictos errados) além de uma família de medidores `quark_benchmark_*` - `io_time`, `cpu_time`, `memory_time` e seus companheiros `_wall_time` / `_memory` - que registram o desempenho da caixa em relação a um benchmark conhecido, então você pode diferenciar um corredor genuinamente sobrecarregado de outro que acabou de enfrentar um problema pesado. Ele também relata os mesmos sinais vitais do host `os_*` que a motoniveladora.
 
-Durante concursos ao vivo:
+A emissora – o serviço que os fãs contestam eventos para navegadores por meio de SSE e WebSockets – exporta (subsistema `broadcaster`): `broadcaster_websockets_count` e `broadcaster_sse_count` (conexões atualmente abertas de cada tipo), `broadcaster_messages_total` (mensagens enviadas) e `broadcaster_channel_drop_total`. Esse último é o alarme: uma gravação de canal perdida significa que um cliente estava muito lento para acompanhar e foi cortado, então a subida do `channel_drop_total` durante uma competição significa que as pessoas estão perdendo atualizações do placar ao vivo. A latência de despacho e processamento vem dos resumos `broadcaster_dispatch_latency_seconds` e `broadcaster_process_latency_seconds`.
 
-- **Participantes ativos**: usuários que estão enviando
-- **Taxa de envio**: envios por minuto
-- **Atualizações do placar**: frequência de atualização
-- **Fila de Esclarecimentos**: Esclarecimentos pendentes
+Cada serviço Go também emite um contador `build_info` carregando rótulos const `version` e `go_version`, que existem apenas para que você possa confirmar no Prometheus qual versão binária está realmente sendo executada em cada host após uma implantação - útil quando uma implementação é aplicada pela metade e metade dos executores estão na versão antiga.
 
-### Painel de infraestrutura
+## O status da fila voltada para o aplicativo
 
-Visão geral da integridade do sistema:
+Prometheus é a visão do operador. Há um segundo caminho de status separado destinado ao próprio aplicativo. `\OmegaUp\Grader::status()` em `frontend/server/src/Grader.php` emite uma solicitação `curl` para `OMEGAUP_GRADER_URL . '/grader/status/'` (com `OMEGAUP_GRADER_URL` padronizado como `https://localhost:21680`) e recebe de volta um pequeno blob JSON - `run_queue_length`, `runner_queue_length`, `runners`, `broadcaster_sockets` e `embedded_runner` — apresentado por meio de `\OmegaUp\Controllers\Grader::apiStatus()`. É isso que renderiza o pequeno indicador de fila dentro do site, não o que o Prometheus raspa. Em um ambiente de desenvolvimento em que `OMEGAUP_GRADER_FAKE` está definido, `status()` entra em curto-circuito e retorna uma estrutura totalmente zeros para que a IU não apresente erros quando não houver nenhum avaliador real por trás dele. Não use isso para criar painéis – é um instantâneo de um momento específico sem histórico; é para isso que serve o raspador `/metrics`.
 
-- **Uso de CPU/memória**: por serviço
-- **E/S de disco**: banco de dados e armazenamento de problemas
-- **Tráfego de rede**: comunicação entre serviços
-- **Taxas de erro**: respostas 5xx, tempos limite
+## New Relic: rastreamentos, erros e logs no contexto
 
-## Regras de alerta
+Enquanto Prometheus diz *que* algo está lento ou falhando, New Relic diz *qual linha* e *para quem*. A integração tem três pontas, e todas as três são escritas para serem autônomas quando o agente não está instalado, porque os contêineres de desenvolvimento não enviam a extensão PHP `newrelic` e ninguém quer que o aplicativo seja interrompido lá.
 
-### Alertas Críticos
+**Nomeação de transação.** `\OmegaUp\Request` chama `\OmegaUp\NewRelicHelper::nameTransaction("/api/{$this->methodName}")` para que cada chamada de API apareça no New Relic com seu próprio nome — `run.create`, `contest.details` e assim por diante — em vez de tudo se transformar em uma transação `index.php` anônima. Sem isso, a latência do APM é inútil porque não é possível saber qual endpoint é o mais lento.**Relatório de erros.** Quando `ApiCaller::call()` captura uma exceção que não foi tratada de outra forma, ele a encaminha através de `\OmegaUp\NewRelicHelper::noticeError()`, que encaminha para `newrelic_notice_error()` — mas somente depois que `isAvailable()` confirmar que a extensão foi carregada e as funções existem. `NewRelicHelper` (`frontend/server/src/NewRelicHelper.php`) é a costura inteira: `noticeError`, `nameTransaction`, `addCustomAttribute` e um `getStatus()` que você pode chamar para depurar se o agente está conectado. Cada método protege primeiro o `extension_loaded('newrelic')`, e é exatamente por isso que o mesmo código funciona bem em um laptop sem agente.
 
-```yaml
-# alerts.yml
-groups:
-  - name: critical
-    rules:
-      - alert: GraderQueueBacklog
-        expr: grader_queue_length > 100
-        for: 5m
-        labels:
-          severity: critical
-        annotations:
-          summary: "Grader queue backlog detected"
-          description: "Queue has {{ $value }} pending submissions"
-      
-      - alert: NoRunnersAvailable
-        expr: grader_runners_available == 0
-        for: 1m
-        labels:
-          severity: critical
-        annotations:
-          summary: "No runners available"
-          
-      - alert: HighErrorRate
-        expr: rate(api_errors_total[5m]) > 10
-        for: 2m
-        labels:
-          severity: warning
-        annotations:
-          summary: "High API error rate"
-```
-### Alertas de aviso
+**Logs em contexto.** O root logger é configurado uma vez no `frontend/server/bootstrap.php`. Ele constrói um Monolog `Logger` chamado `omegaup` gravando em `OMEGAUP_LOG_FILE` (padrão `/var/log/omegaup/omegaup.log`) no nível `OMEGAUP_LOG_LEVEL` (padrão `info`), e aqui está a parte inteligente: se `\NewRelic\Monolog\Enricher\Formatter` existir (do pacote `newrelic/monolog-enricher`), ele usa esse formatador e envia um `\NewRelic\Monolog\Enricher\Processor` no registrador; caso contrário, ele volta para um `\Monolog\Formatter\LineFormatter` simples. O enriquecedor carimba cada linha de log com os IDs de rastreamento/entidade do New Relic, que é o que permite pular de uma transação lenta diretamente para as linhas de log exatas que a solicitação foi emitida. Um `\Monolog\Processor\WebProcessor` é sempre adicionado (URL de solicitação, método, IP), e `\Monolog\ErrorHandler::register()` conecta os próprios erros do PHP ao mesmo logger para que um fatal não escape sem registro.
 
-```yaml
-      - alert: HighQueueLatency
-        expr: histogram_quantile(0.95, grader_queue_total_wait_time_seconds) > 60
-        for: 10m
-        labels:
-          severity: warning
-        annotations:
-          summary: "High queue wait time"
-      
-      - alert: DatabaseSlowQueries
-        expr: histogram_quantile(0.99, db_query_duration_seconds) > 1
-        for: 5m
-        labels:
-          severity: warning
-```
-## Registro
+**Agente de navegador (RUM).** O frontend também pode injetar o script de navegador do New Relic no cabeçalho da página. O shell Twig `frontend/templates/template.tpl` emite `{{ NEW_RELIC_SCRIPT|raw }}` dentro de `{% if NEW_RELIC_SCRIPT %}`, portanto, o monitoramento do usuário real só é ativado quando o valor de configuração `NEW_RELIC_SCRIPT` é definido (o padrão é `null`, ou seja, desativado, em `config.default.php`, ao lado de `NEW_RELIC_SCRIPT_HASH`, que existe para que o script embutido possa ser listado como permitido no Política de Segurança de Conteúdo sem enfraquecê-la). É isso que captura o tempo real de carregamento da página de navegadores reais, em vez de apenas o tempo do lado do servidor.
 
-### Locais de registro
+## Metabase e Argo CD
 
-| Serviço | Localização do registro |
-|--------|-------------|
-| Front-end (PHP) | `/var/log/omegaup/frontend.log` |
-| Graduador | `/var/log/omegaup/grader.log` |
-| Corredor | `/var/log/omegaup/runner.log` |
-| Nginx | `/var/log/nginx/access.log`, `/var/log/nginx/error.log` |
-| MySQL | `/var/log/mysql/error.log` |
+Mais duas ferramentas completam o quadro, e ambas são nomeadas nas notas operacionais do omegaUp, e não na base de código, porque observam o sistema de fora.
 
-### Formato de registro
+**Metabase** é a camada de análise de dados e relatórios. Ele se conecta ao MySQL de produção e permite que as pessoas criem consultas e painéis sem SQL escrito à mão - as perguntas que ele responde são questões de produto ("quantos usuários resolveram pelo menos um problema este mês") em vez de questões operacionais ("a fila está acabando"). Historicamente, tem sido o mais esquisito do grupo; se estiver mostrando um erro de conexão, o link do Metabase para o banco de dados está inativo, não o site em si, e o site está perfeitamente bem sem ele.
 
-Registro JSON estruturado:
+**Argo CD** monitora implantações em vez de tráfego. É o controlador de entrega contínua para o cluster Kubernetes e trata o Git como a única fonte da verdade: ele compara continuamente o estado desejado declarado no repositório de implantação com o que realmente está em execução no cluster e sinaliza (ou reconcilia) qualquer desvio. Quando você quiser saber "minha mudança realmente foi implementada e todas as réplicas estão na nova versão", o status de sincronização do Argo CD é o primeiro lugar a procurar - e combina naturalmente com a métrica `build_info` acima, que confirma a mesma coisa da própria boca do binário em execução.
 
-```json
-{
-  "timestamp": "2025-01-23T10:30:00Z",
-  "level": "INFO",
-  "service": "grader",
-  "message": "Run completed",
-  "run_id": 12345,
-  "verdict": "AC",
-  "duration_ms": 450,
-  "runner": "runner-1"
-}
-```
-### Agregação de registros
+## Um exemplo prático: "os envios parecem lentos"
 
-Registro centralizado com pilha ELK:
+O objetivo de ter essas ferramentas é que um relatório vago resolve uma causa específica em algumas consultas. Quando alguém disser que os envios estão lentos durante um concurso, siga a cadeia em ordem de dependência:
 
-```yaml
-# filebeat.yml
-filebeat.inputs:
-  - type: log
-    enabled: true
-    paths:
-      - /var/log/omegaup/*.log
-    json.keys_under_root: true
-    
-output.elasticsearch:
-  hosts: ["elasticsearch:9200"]
-  index: "omegaup-%{+yyyy.MM.dd}"
-```
-## Verificações de integridade
+1. **Foi realmente feito backup da fila?** Veja `quark_grader_queue_total_length` e o `quark_grader_queue_high_length` por camada. Se o total for estável e baixo, o avaliador está acompanhando e o problema está em outro lugar (frontend, rede). Se estiver subindo, continue.
+2. **Os corredores estão desaparecendo?** Soma `quark_grader_runner_up`. Uma queda aqui – um host executor que parou de fazer check-in dentro da janela de 3 minutos – significa menos capacidade de avaliação e a fila aumentará, não importa quão saudável o avaliador esteja. Verifique com o Argo CD para ver se um lançamento ruim derrubou os corredores.
+3. **O culpado é um único problema?** Verifique `quark_grader_queue_delay_seconds{quantile="0.99"}` em relação à mediana. Um p99 enorme com um p50 normal significa que a maioria das execuções está bem, mas algumas estão presas a um problema caro, não a uma falta geral de capacidade.
+4. **A própria motoniveladora está errando em vez de apenas ficar lenta?** Observe `quark_grader_runs_retry` e especialmente `quark_grader_runs_abandoned` e `quark_grader_runs_je`. Qualquer inclinação em abandono ou JE significa que as corridas estão sendo abandonadas ou o juiz está quebrado – um incidente de correção, não de desempenho.
+5. **Ou é o frontend, e não o avaliador?** De volta ao lado do PHP, `rate(frontend_api_request_status_count{api="run.create", status!="200"}[5m])` sobre `rate(frontend_api_request_total{api="run.create"}[5m])` fornece a taxa de erro para envios, e a transação `run.create` da New Relic (nomeada exatamente por esse motivo) mostra se o tempo está indo para o MySQL, a chamada HTTP do avaliador ou o próprio PHP - com as linhas de log enriquecidas dessa solicitação a um clique de distância.
 
-### Pontos de extremidade de integridade do serviço
+## Uma nota sobre nomes de host
 
-| Serviço | Ponto final | Resposta Esperada |
-|--------|----------|-------------------|
-| Interface | `GET /health/` | `200 OK` |
-| Graduador | `GET /grader/status/` | JSON com informações da fila |
-| MySQL | Verificação TCP em 3306 | Sucesso de conexão |
-| Redis | `PING` | `PONG` |
-
-### Verificações de integridade do Docker
-
-```yaml
-services:
-  frontend:
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost/health/"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-  
-  mysql:
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-```
-## Linhas de base de desempenho
-
-### Métricas Esperadas (Operação Normal)
-
-| Métrica | Faixa normal | Aviso | Crítico |
-|--------|--------------|---------|----------|
-| Comprimento da fila | 0-10 | >50 | >100 |
-| Tempo de espera na fila | <10s | >30s | >60 anos |
-| Latência da API (p95) | <200ms | >500ms | >1s |
-| Taxa de erro | <0.1% | >1% | >5% |
-| Utilização do Corredor | 20-80% | >90% | 100% |
-
-## Solução de problemas com métricas
-
-### Envios Lentos
-
-1. Verifique `grader_queue_length` - backlog da fila?
-2. Verifique `grader_runners_available` - corredores suficientes?
-3. Verifique `grader_run_duration_seconds` - problemas de lentidão?
-
-### Altas taxas de erro
-
-1. Verifique `api_errors_total` por tipo de erro
-2. Verifique `db_query_duration_seconds` - problemas de banco de dados?
-3. Verifique os logs de serviço em busca de rastreamentos de pilha
-
-### Problemas de memória
-
-1. Verifique os limites de memória do contêiner
-2. Revise as métricas `cache_size_bytes`
-3. Verifique se há vazamentos de memória em processos de longa execução
+Os painéis, a conta New Relic, a instância do Metabase e o console do Argo CD residem em URLs privados e autenticados que não são publicados aqui propositalmente. Se você precisar de acesso, será uma conversa sobre credenciais e permissões com a equipe de manutenção, não um link colado em um navegador.
 
 ## Documentação Relacionada
 
-- **[Solução de problemas](troubleshooting.md)** - Problemas e soluções comuns
-- **[Infraestrutura](../architecture/infrastructure.md)** - Arquitetura de serviço
-- **[Implantação](deployment.md)** - Processo de implantação
+- **[Solução de problemas](troubleshooting.md)** — transformando um sintoma em uma solução
+- **[Infraestrutura](../architecture/infrastructure.md)** — como os serviços se encaixam
+- **[Implantação](deployment.md)** — com o que o Argo CD está se reconciliando

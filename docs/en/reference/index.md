@@ -56,7 +56,7 @@ The [Links](links.md) page provides:
 
 ## Related Documentation
 
-- **[API Reference](../api/index.md)** - Complete API documentation
+- **[API Reference](../reference/api.md)** - Complete API documentation
 - **[Architecture](../architecture/index.md)** - System design
 - **[Development Guides](../development/index.md)** - Developer resources
 - **[Features](../features/index.md)** - Feature documentation

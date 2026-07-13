@@ -56,33 +56,33 @@ Si eres nuevo en omegaUp, te recomendamos:
 
 ## Descripción general del entorno de desarrollo
 
-omegaUp utiliza Docker para el desarrollo local:
+omegaUp utiliza Docker para el desarrollo local. A alto nivel:
 
-- **Web + API**: PHP y MySQL (MVC, APIs JSON)
-- **Juez**: Go (grader/runner) y sandbox minijail
-- **UI**: Vue.js, TypeScript, Bootstrap 4 (migración desde plantillas heredadas)
-- **Problemas**: gitserver y formato ZIP — ver [Problemas](../features/problems/index.md)
+- **Web + API**: **controladores PHP 8.1** y DAO sobre **MySQL 8** (MVC clásico; API JSON)
+- **Juez**: **Go** calificador, corredores y **minijail** sandbox: un servicio separado (`omegaup/quark`) al que el backend llama a través de HTTP
+- **UI del navegador**: **Vue 2.7** componentes de un solo archivo, **TypeScript**, **Bootstrap 4**, renderizados dentro de un shell de servidor **Twig 3**
+- **Problema de almacenamiento**: **gitserver** y diseño zip/case como se documenta en [Características → Problemas](../features/problems/index.md)
 
-### Rutas útiles en el repositorio
+### Dónde viven las cosas en el repositorio (mapa rápido)
 
-| Área | Ruta |
-|------|------|
-| API / reglas | `frontend/server/src/Controllers/` |
-| Acceso a datos | `frontend/server/src/DAO/` |
+| Área | Ruta (en el repositorio principal) |
+|------|--------------------------------|
+| API HTTP/reglas comerciales | `frontend/server/src/Controllers/` |
+| Acceso a la base de datos | `frontend/server/src/DAO/` |
 | Migraciones | `frontend/database/` |
-| Vue/TS | `frontend/www/js/` |
-| Plantillas / i18n | `frontend/templates/` |
-| Tests PHPUnit | `frontend/tests/controllers/` |
-| Cypress | `cypress/e2e/` |
+| Mecanografiado/Vue | `frontend/www/js/` |
+| Plantillas heredadas / i18n | `frontend/templates/` |
+| Pruebas de API PHPUnit | `frontend/tests/controllers/` |
+| Ciprés E2E | `cypress/e2e/` |
 
-### Lecturas (arquitectura)
+### Artículos (contexto arquitectónico)
 
-- [omegaUp en IOI Journal (2014)](http://www.ioinformatics.org/oi/pdf/v8_2014_169_178.pdf)
-- [libinteractive](https://ioinformatics.org/journal/v9_2015_3_14.pdf)
+- [omegaUp: sistema de gestión de concursos basado en la nube](http://www.ioinformatics.org/oi/pdf/v8_2014_169_178.pdf) (IOI Journal, 2014)
+- [libinteractive](https://ioinformatics.org/journal/v9_2015_3_14.pdf) — tareas interactivas
 
-## Navegadores compatibles
+## Navegadores compatibles (colaboradores y concursantes)
 
-Use un navegador **actual** (Chrome, Firefox, Safari o Edge). El sitio es **solo HTTPS**; navegadores muy antiguos no son compatibles.
+Utilice un navegador **actual y actual** (**Chrome**, **Firefox**, **Safari** o **Edge**). El sitio es **solo HTTPS**. Las versiones muy antiguas de Internet Explorer **no** son compatibles.
 
 ## Cuentas de Desarrollo
 

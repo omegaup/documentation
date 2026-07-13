@@ -44,4 +44,4 @@ Un problema consiste en:
 
 - **[Creando problemas](creating-problems.md)** - Guía de creación paso a paso
 - **[Formato del problema](problem-format.md)** - Estructura y formato del archivo ZIP
-- **[API de problemas](../api/problems.md)** - Puntos finales de API para problemas
+- **[API de problemas](../../reference/api.md)** - Puntos finales de API para problemas

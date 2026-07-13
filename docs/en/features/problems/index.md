@@ -45,4 +45,4 @@ A problem consists of:
 
 - **[Creating Problems](creating-problems.md)** - Step-by-step creation guide
 - **[Problem Format](problem-format.md)** - ZIP file structure and format
-- **[Problems API](../api/problems.md)** - API endpoints for problems
+- **[Problems API](../../reference/api.md)** - API endpoints for problems

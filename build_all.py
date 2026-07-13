@@ -27,10 +27,11 @@ CONFIG_FILES = [
 VENV_DIR = ROOT / ".venv"
 if VENV_DIR.exists():
     PYTHON = str(VENV_DIR / "bin" / "python3")
-    ZENSICAL = str(VENV_DIR / "bin" / "zensical")
+    # ponytail: invoke via `-m zensical`; the console-script shim isn't always on PATH
+    ZENSICAL = [str(VENV_DIR / "bin" / "python3"), "-m", "zensical"]
 else:
-    PYTHON = "python3"
-    ZENSICAL = "zensical"
+    PYTHON = sys.executable
+    ZENSICAL = [sys.executable, "-m", "zensical"]
 
 def run_command(cmd, description):
     """Run a command and handle errors."""
@@ -90,7 +91,7 @@ def main():
             continue
         
         success = run_command(
-            [ZENSICAL, "build", "--clean", "--config-file", config],
+            [*ZENSICAL, "build", "--clean", "--config-file", config],
             f"Building {lang.upper()} documentation"
         )
         
