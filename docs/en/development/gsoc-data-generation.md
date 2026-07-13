@@ -4,17 +4,17 @@ description: How omegaUp generates GSoC year pages from JSON data
 icon: bootstrap/code
 ---
 
-# GSoC documentation data files
+# GSoC documentation data files {#gsoc-documentation-data-files}
 
 Every year omegaUp runs a Google Summer of Code campaign, and every year the docs need one page per year: a "current" page full of project ideas and the application funnel while the campaign is live, and a lean "past" page listing what got shipped once it's over. Rather than hand-write those pages and let their headings drift apart, we keep the year-specific content in a single JSON data file and stamp out the Markdown from it with a small Python generator. Think of `scripts/generate-gsoc-pages.py` as a tiny template compiler whose only template language is Python f-strings and whose only input is `_data/gsoc-data.json` — no Jinja, no Zensical plugin, nothing but the standard library, so it runs on a bare `python3` with zero `pip install`.
 
 The whole thing is deliberately small (about 180 lines) because it's a **scaffolding tool, not a live renderer**. It doesn't run at build time — `build_all.py` never calls it (grep it and you'll find no reference). You run it by hand when you add or roll over a year, review the Markdown it spits out, hand-polish it, and commit the result. That distinction matters, and we come back to it below, because the pages currently committed under `docs/en/community/gsoc/` are considerably richer than anything the generator emits today.
 
-## The one-line mental model
+## The one-line mental model {#the-one-line-mental-model}
 
 `gsoc-data.json` is the source of truth for the *skeleton* of each year page; the generator walks `data["years"]` and, for each year, dispatches on its `type` field to one of two functions that build the Markdown line by line. `type: "current"` gets the full treatment (project ideas + a four-phase application process + communications + FAQ + related docs); anything else gets the stripped-down "past" layout (completed projects with results + related docs).
 
-## What the generator actually does, end to end
+## What the generator actually does, end to end {#what-the-generator-actually-does-end-to-end}
 
 The entry point is `main()` at the bottom of `scripts/generate-gsoc-pages.py`. In order:
 
@@ -30,11 +30,11 @@ The entry point is `main()` at the bottom of `scripts/generate-gsoc-pages.py`. I
 
 When it finishes it prints `✓ All GSoC pages generated successfully!` and a reminder to review and commit the files. Nothing is staged in git for you — that's on you.
 
-## The two layouts, field by field
+## The two layouts, field by field {#the-two-layouts-field-by-field}
 
 The genuine teaching value is knowing exactly which JSON key becomes which piece of Markdown, because that's what you're editing blind when you touch the data file.
 
-### Current-year page — `generate_current_year_page()`
+### Current-year page — `generate_current_year_page()` {#current-year-page-generate_current_year_page}
 
 Given a `type: "current"` year, the function emits, in this fixed order:
 
@@ -55,7 +55,7 @@ Given a `type: "current"` year, the function emits, in this fixed order:
 - **`## FAQ`** — emitted only `if "faq" in year_data`. Each item becomes `**{question}**` on one line and `{answer}` on the next — again with no blank line between, so question and answer render as one paragraph, question bold-leading.
 - **`## Related Documentation`** — emitted only `if "related_docs" in year_data`, each entry as `- **{doc}**`. Because the whole `doc` string is wrapped in `**...**`, the *entire* entry (link text *and* the trailing " - description") comes out bold. That's a quirk of the current template, not a design choice worth defending.
 
-### Past-year page — `generate_past_year_page()`
+### Past-year page — `generate_past_year_page()` {#past-year-page-generate_past_year_page}
 
 Anything not `current` gets the lean layout: the same three-key frontmatter and `# {title}` / `intro` header, then **`## Projects`** built from `year_data.get("projects", [])`. Each project object is just:
 
@@ -68,7 +68,7 @@ Anything not `current` gets the lean layout: the same three-key frontmatter and 
 
 Then the same optional **`## Related Documentation`** block. That's the whole past template — no skills, no phases, no FAQ. The mental split is: a *current* page is a recruiting funnel, a *past* page is a résumé.
 
-## The data schema
+## The data schema {#the-data-schema}
 
 Everything hangs off a top-level `years` object keyed by four-digit year strings. Each year is one of two shapes.
 
@@ -122,7 +122,7 @@ A **past** year (see `2023` / `2024`):
 
 One thing the schema does *not* encode: the relative links inside `related_docs`, `application_process` steps, and `communications` are written from the perspective of the year page's own directory (`../getting-started/...`, `../index.md`, and sibling `2025.md`). If you move where the pages are generated, those links move with them and can break — verify them with `scripts/verify_docs_nav.py` after regenerating.
 
-## Adding a new year
+## Adding a new year {#adding-a-new-year}
 
 When a new campaign opens, you do two edits and roll one year over:
 
@@ -134,7 +134,7 @@ When a new campaign opens, you do two edits and roll one year over:
 
 Because omegaUp maintains four locales (`docs/en`, `docs/es`, `docs/pt`, `docs/pt-BR`), each with its own `_data/gsoc-data.json`, "add a year" means repeating steps 1–5 per locale you maintain — the generator has no notion of locale, it just runs against whatever single JSON its `DATA_FILE` points at. `scripts/translate_docs.py` handles the bulk translation of prose, but the structured year data is edited per-locale by hand.
 
-## The stale path gotcha — read this before you run it
+## The stale path gotcha — read this before you run it {#the-stale-path-gotcha-read-this-before-you-run-it}
 
 Here's the sharp edge. The script's `DATA_FILE` is hardcoded to:
 
@@ -159,19 +159,19 @@ OUTPUT_DIR = PROJECT_ROOT / "docs" / "en" / "community" / "gsoc"
 
 and run it once per locale. A proper fix would take the locale as an argument and loop, but as of this writing the script is still single-path and locale-blind. Treat the committed constants as a bug to work around, not a layout to trust.
 
-## Two more drifts to know about
+## Two more drifts to know about {#two-more-drifts-to-know-about}
 
-### Icon drift
+### Icon drift {#icon-drift}
 
 The generator hardcodes `icon: material/school` into the frontmatter of every page it emits. The pages actually committed under `docs/en/community/gsoc/` use `icon: bootstrap/school` — the whole docs site standardized on the `bootstrap/…` icon set (see any sibling under `docs/en/development/`, e.g. `icon: bootstrap/terminal`). So freshly generated pages come out with the wrong icon namespace and need a one-line fixup, or the generator's frontmatter string needs updating to `bootstrap/school`. Until someone does the latter, expect to hand-correct it every regeneration.
 
-### The committed pages are richer than the generator
+### The committed pages are richer than the generator {#the-committed-pages-are-richer-than-the-generator}
 
 If you diff a committed page against what the generator would produce, they don't match — and that's expected. Take `docs/en/community/gsoc/2023.md`: the generator's past layout would give you two `### {name}` blocks with a one-line description and a `**Result**:` each. The committed page instead has a **COPPA Compliance** deep-dive, "Key Achievements" and "Technical Implementation" bullet lists, a Selenium-vs-Cypress benefit table, a "Project Ideas (2023)" section, and a Statistics table — none of which exist anywhere in `gsoc-data.json`. Likewise `2026.md` is committed and live even though the data file's newest year is still `2025`.
 
 The takeaway: the generator is a **bootstrap tool for the initial skeleton of a year page**, not the authoritative renderer of the pages you see on the site. Regenerating will *overwrite* those hand-crafted sections with the bare template. So before you rerun it against a year that's already been hand-enriched, make sure you're prepared to re-apply (or git-restore) the richer content — or, better, only regenerate genuinely new years.
 
-## File layout
+## File layout {#file-layout}
 
 ```
 docs/<lang>/community/gsoc/
@@ -188,7 +188,7 @@ docs/<lang>/community/gsoc/
 
 A standing rule for this folder: **never drop a `README.md` next to `index.md`.** Zensical treats `README.md` as the section index, so it would claim the `/community/gsoc/` URL and shadow the real `index.md` hub. If the landing page ever "disappears," a stray `README.md` is the first thing to check.
 
-## Notes
+## Notes {#notes}
 
 - The generator is pure standard library (`json`, `sys`, `pathlib`) — no dependencies, no virtualenv needed. That constraint is why it reads JSON and not the friendlier YAML mirror.
 - It does not run during `build_all.py`; regeneration is always a deliberate, manual step you review before committing.

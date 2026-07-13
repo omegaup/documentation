@@ -4,7 +4,7 @@ description: ZIP file structure for manual problem creation
 icon: bootstrap/file-document
 ---
 
-# Problem format (manual ZIP)
+# Problem format (manual ZIP) {#problem-format-manual-zip}
 
 This page is for the experienced problemsetter who needs to hand-build a problem
 `.zip` — or edit one omegaUp already deployed — because they need something the
@@ -34,13 +34,13 @@ So think of the `.zip` as *source* and `settings.json` as the *compiled artifact
 which is exactly why the directory names and file extensions below have to be
 letter-perfect.
 
-## The configurable settings (mental model)
+## The configurable settings (mental model) {#the-configurable-settings-mental-model}
 
 Whether you set these through the web UI or ship them in packaged metadata, every
 problem carries the same handful of knobs. Understanding what each one *means* —
 and what verdict you get when it is exceeded — is what lets you package correctly.
 
-### Validator: how the contestant's output is judged
+### Validator: how the contestant's output is judged {#validator-how-the-contestants-output-is-judged}
 
 The validator decides whether an output is right, and gives a per-case score in
 `[0.0, 1.0]`. omegaUp ships five, whose canonical names live in
@@ -75,7 +75,7 @@ The validator decides whether an output is right, and gives a per-case score in
   prints the score itself. Full details and worked examples are in
   [Custom validator](#custom-validator-validatorlang) below.
 
-### Languages: what the contestant may submit
+### Languages: what the contestant may submit {#languages-what-the-contestant-may-submit}
 
 - **C, C++, Java, Python, …** — the contestant submits source in one of omegaUp's
   supported languages.
@@ -88,7 +88,7 @@ The validator decides whether an output is right, and gives a per-case score in
 - **No submissions** — the contestant cannot submit at all. This exists purely to
   display content (a reading, a lesson) inside a course.
 
-### Time, memory, and output limits
+### Time, memory, and output limits {#time-memory-and-output-limits}
 
 Each of these maps to a specific verdict when the contestant's program crosses it,
 and each has a real default. The problem-creation form currently pre-fills these
@@ -138,7 +138,7 @@ agree with them, so a package that omits limits still runs sensibly:
     The idea is that judging can afford to be slower and hungrier than the
     contestant's solution.
 
-### Everything else
+### Everything else {#everything-else}
 
 - **Source** — attribution/origin for the statement, shown to contestants.
 - **Appears in the public listing** — whether the problem can be shown publicly and
@@ -147,7 +147,7 @@ agree with them, so a package that omits limits still runs sensibly:
   user asks a clarification about this problem.
 - **Tags** — classification labels.
 
-## The ZIP layout
+## The ZIP layout {#the-zip-layout}
 
 Save everything into a **`.zip`** archive — not `.rar`, `.tar.bz2`, `.7z`, or
 `.zx`. The name of the zip itself does not matter. A minimal language problem
@@ -184,7 +184,7 @@ and there are many more under
     folder called `Cases` will not be found, and neither will an input file ending
     in `.In` instead of `.in`.
 
-### `cases/`
+### `cases/` {#cases}
 
 This folder holds every test case as paired `.in`/`.out` files. The **base names
 must match** — `1.in` with `1.out`, `hola.in` with `hola.out` — but the base name
@@ -215,7 +215,7 @@ and in a live contest that translates directly into queue wait times — especia
 painful when a slow, `TLE`-bound solution is sitting ahead of everyone else in the
 queue.
 
-### `statements/`
+### `statements/` {#statements}
 
 This holds the problem statement in Markdown (the same flavor Wikipedia uses), one
 file per locale: `es.markdown`, `en.markdown`, `pt.markdown`. At least one is
@@ -228,7 +228,7 @@ LaTeX is fully supported. Wrap variable names in `$…$` — write `$n$`, `$x$`,
 `$x_i$` for a subscript — so they stand out from prose and contestants can find
 them at a glance. It reads better and it avoids ambiguity.
 
-### `solutions/`
+### `solutions/` {#solutions}
 
 Structurally identical to `statements/`: the official solution write-up in
 Markdown, named per locale (`es.markdown`, and translations `en.markdown`,
@@ -236,7 +236,7 @@ Markdown, named per locale (`es.markdown`, and translations `en.markdown`,
 [`testproblem.zip`](https://github.com/omegaup/omegaup/blob/main/frontend/tests/resources/testproblem.zip)
 includes a solutions example.
 
-### `interactive/` (optional)
+### `interactive/` (optional) {#interactive-optional}
 
 Interactive problems — where the contestant's program talks back and forth with a
 judge process rather than reading a fixed input — must be built with
@@ -250,7 +250,7 @@ One convenience the deployer handles for you: libinteractive sample cases under
 one automatically
 ([`ziphandler.go`](https://github.com/omegaup/gitserver/blob/main/ziphandler.go#L495-L514)).
 
-### Custom validator (`validator.<lang>`)
+### Custom validator (`validator.<lang>`) {#custom-validator-validatorlang}
 
 When token comparison is not enough — multiple correct answers, special-judge
 scoring, partial credit — ship exactly **one** file named `validator.<lang>` at
@@ -361,7 +361,7 @@ if __name__ == '__main__':
   _main()
 ```
 
-### `testplan` (optional)
+### `testplan` (optional) {#testplan-optional}
 
 By default **every case is worth `1/number-of-cases`** — the deployer assigns each
 case a weight of `1/1` and the grader normalizes all weights so they sum to 1
@@ -410,7 +410,7 @@ its cases' scores times the group weight). The default is why the
 group and you collect the full weight; miss any case and the group collapses to
 zero.
 
-### `settings.json` (usually generated, occasionally hand-written)
+### `settings.json` (usually generated, occasionally hand-written) {#settingsjson-usually-generated-occasionally-hand-written}
 
 You will most often *never* write this file — it is the compiled artifact gitserver
 produces from your `cases/`, `testplan`, and limits, marshaled out in
@@ -424,7 +424,7 @@ block. If you *do* ship your own `settings.json`, gitserver reads it, then still
 lets a `testplan` override the case weights on top of it. Either way, only the
 generated `settings.json` survives into the deployed problem repository.
 
-## Images
+## Images {#images}
 
 omegaUp has native image support :). To embed an image in a statement, add the
 image file to your zip **inside `statements/`** and reference it from your
@@ -437,12 +437,12 @@ image file to your zip **inside `statements/`** and reference it from your
 Supported formats are **jpg, gif, png**. Mind the size — Markdown will **not**
 rescale it — so keep images at or under **650 pixels wide**.
 
-## Example zips
+## Example zips {#example-zips}
 
 The zips omegaUp uses in its own tests are the best templates to copy from:
 [`frontend/tests/resources`](https://github.com/omegaup/omegaup/tree/main/frontend/tests/resources).
 
-## Karel problems
+## Karel problems {#karel-problems}
 
 First, just try [karel.js](https://omegaup.com/karel.js/) — it converts cases for
 you and is far less trouble than what follows.
@@ -484,7 +484,7 @@ run `python` from the DOS console before starting.
 9. Finally, add a `statements` folder with `es.markdown` and zip it up exactly as
    you would a language problem.
 
-## How it all comes together
+## How it all comes together {#how-it-all-comes-together}
 
 To close the loop: when you upload, gitserver's
 [`ziphandler.go`](https://github.com/omegaup/gitserver/blob/main/ziphandler.go)
@@ -500,7 +500,7 @@ your limits, applies the validator, and rolls the per-case scores up through the
 group score policy. Every path and extension in this document exists to make that
 pipeline resolve correctly — which is why getting them exactly right matters.
 
-## Related documentation
+## Related documentation {#related-documentation}
 
 - **[Creating problems](creating-problems.md)** — the authoring workflow and UI paths
 - **[Verdicts](../verdicts.md)** — what `AC`, `TLE`, `MLE`, `OLE`, `JE`, and the rest mean

@@ -4,7 +4,7 @@ description: Common issues and solutions
 icon: bootstrap/tools
 ---
 
-# Troubleshooting
+# Troubleshooting {#troubleshooting}
 
 This page collects the operational failures people actually hit running omegaUp — the stack won't boot, the API can't reach MySQL, your frontend edits don't show up, or the grader is unreachable and submissions hang. For each one we lead with the **raw error you'll see**, then explain **what it actually means**, then give the **fix** — because a symptom you can't interpret is a symptom you can't resolve, and the error text is what lets us match your problem to a known cause.
 
@@ -14,7 +14,7 @@ Before you dig in, one mental model that saves a lot of time: **the local stack 
 
 ---
 
-## The Stack Won't Boot
+## The Stack Won't Boot {#the-stack-wont-boot}
 
 **Symptom**: `docker compose up --no-build` never reaches the ready state, or a container shows up as `Restarting` / `Exited` in `docker compose ps` instead of `Up`.
 
@@ -59,7 +59,7 @@ docker compose up --no-build
 
 ---
 
-## MySQL Is Not Reachable
+## MySQL Is Not Reachable {#mysql-is-not-reachable}
 
 **Symptom**: the API returns 500s, and the PHP log or the browser shows a connection error like `SQLSTATE[HY000] [2002]` or `Can't connect to MySQL server`. Nothing that touches the database works, which is basically everything.
 
@@ -98,7 +98,7 @@ docker compose up -d
 
 ---
 
-## The Web App Is Not Showing My Changes
+## The Web App Is Not Showing My Changes {#the-web-app-is-not-showing-my-changes}
 
 **Symptom**: you edited a `.vue` or `.ts` file, saved, hard-reloaded the browser — and it still shows the old UI.
 
@@ -119,7 +119,7 @@ If you've rebuilt successfully and it's *still* stale, work down this short list
 
 ---
 
-## The Grader Is Unreachable
+## The Grader Is Unreachable {#the-grader-is-unreachable}
 
 **Symptom**: submissions sit forever with no verdict, or an admin action that touches grading returns a 500. In the PHP log you'll see a `Grader` channel error — `curl failed` with a URL under `https://localhost:21680`, or the terminal message `Maximum retry attempts exceeded`.
 
@@ -162,7 +162,7 @@ One escape hatch worth knowing for frontend-only work: you don't actually need a
 
 ---
 
-## Quick Error Reference
+## Quick Error Reference {#quick-error-reference}
 
 These are the signatures you'll actually see, mapped to the section above that explains them. When you file an issue, paste the exact text — the error string is what lets us match your symptom to a known cause.
 
@@ -180,7 +180,7 @@ These are the signatures you'll actually see, mapped to the section above that e
 
 ---
 
-## Getting More Help
+## Getting More Help {#getting-more-help}
 
 If none of this resolves it:
 
@@ -188,7 +188,7 @@ If none of this resolves it:
 2. **Ask on [Discord](https://discord.gg/gMEMX7Mrwe)**, and always include the relevant log output; a symptom without its error text is hard to place.
 3. **File a bug** with your reproduction steps and the verbatim error — see [Getting Help](../getting-started/getting-help.md) for what makes a good report.
 
-## Related Documentation
+## Related Documentation {#related-documentation}
 
 - **[Development Environment Setup](../getting-started/development-setup.md)** — standing up the stack, and the setup-time troubleshooting this page defers to.
 - **[Getting Help](../getting-started/getting-help.md)** — where to ask when you're stuck.

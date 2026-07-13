@@ -4,17 +4,17 @@ description: Guide to creating and managing programming contests
 icon: bootstrap/cog
 ---
 
-# Managing Contests
+# Managing Contests {#managing-contests}
 
 This page walks through everything you do as the person *running* a contest — the teacher setting up a weekly practice for a class, the club organizer hosting a regional selection, the coach reproducing last year's IOI as a training session. We trace the real flow: creating the contest, hanging problems on it, deciding who gets in, tuning the scoreboard, and picking the mode that fits your room. Every knob here maps to a field on `\OmegaUp\DAO\VO\Contests` and an endpoint on `\OmegaUp\Controllers\Contest` (`frontend/server/src/Controllers/Contest.php`), so when the UI hides something you'll know exactly which parameter to reach for.
 
-## Creating a Contest
+## Creating a Contest {#creating-a-contest}
 
 The contest form you fill in on the site is the Vue component `frontend/www/js/omegaup/components/contest/Form.vue`; when you submit it, it POSTs to `Contest::apiCreate` (`Contest.php:2941`). Two gates fire before anything is written: `Controller::ensureNotInLockdown()` (you cannot author contests from the `arena.omegaup.com` lockdown host — more on that below), and `ensureMainUserIdentityIsOver13()`, because contest creation is tied to a full account and omegaUp does not let under-13 identities own one.
 
 The single most surprising thing about `apiCreate` is that **every contest is born private**, no matter what you ask for. The controller hard-codes `'admission_mode' => 'private'`, and if you pass any `admission_mode` other than `'private'` it throws `contestMustBeCreatedInPrivateMode` rather than silently honoring it. This is deliberate: you build the contest in a quiet room — add problems, sanity-check the clock, invite a co-admin — and only *then* flip it public through `apiUpdate`. Nobody stumbles onto a half-finished contest.
 
-### The basic fields
+### The basic fields {#the-basic-fields}
 
 These four are the identity of the contest and are required:
 
@@ -23,7 +23,7 @@ These four are the identity of the contest and are required:
 - **`description`** — free text shown on the contest's intro page before a contestant enters.
 - **`start_time` / `finish_time`** — both are timestamps. `finish_time` must be *strictly* greater than `start_time` or `validateCommonCreateOrUpdate` throws `contestNewInvalidStartTime`. The two together define the contest length, and that length is capped: `MAX_CONTEST_LENGTH_SECONDS` is `60 * 60 * 24 * 31`, i.e. **31 days** for a normal organizer; system admins get `MAX_CONTEST_LENGTH_SYSADMIN_SECONDS` = **60 days**. Ask for a 40-day contest as a teacher and you'll get `contestLengthTooLong` back with the `max_days` you're allowed.
 
-### The tuning knobs (and what they actually do)
+### The tuning knobs (and what they actually do) {#the-tuning-knobs-and-what-they-actually-do}
 
 Everything past the basics has a sensible default, so you can leave them alone for a first contest and come back once you know what you want. The defaults below are the ones written on `VO/Contests`:
 
@@ -39,7 +39,7 @@ Everything past the basics has a sensible default, so you can leave them alone f
 - **`contest_for_teams`** (`bool`, default `false`) plus **`teams_group_alias`** — turn the contest into a team event whose participants come from a teams group rather than individual invitations. This flag changes how you add participants (see below), so decide it up front.
 - **`check_plagiarism`** (`bool`, default `false`) — run omegaUp's plagiarism detector across submissions after the contest.
 
-## Managing Problems
+## Managing Problems {#managing-problems}
 
 A contest starts empty; you hang problems on it with `Contest::apiAddProblem` (`Contest.php:3461`), which the `contest/AddProblem.vue` component drives. Only a contest admin may do this — `validateContestAdmin` runs first — and it's **forbidden on a virtual contest** (`forbiddenInVirtual`), since a virtual contest is a frozen replay of an existing problem set, not a fresh one you edit.
 
@@ -47,7 +47,7 @@ Two parameters shape each addition. **`points`** is `ensureFloat('points', 0, IN
 
 A subtlety worth internalizing: adding a problem pins it to a **specific git commit** of that problem (via `Problem::resolveCommit`, which resolves the optional `commit` parameter or the problem's master commit). This freezes the exact test data and statement your contestants will see, so that an author editing the problem's live version mid-contest can't shift the ground under a running event. After the write, `apiAddProblem` invalidates two caches — `Cache::CONTEST_INFO` for the alias and the scoreboard cache via `Scoreboard::invalidateScoreboardCache` — so the change shows up immediately instead of serving a stale contest page. To pull a problem back out, `apiRemoveProblem` is the mirror image.
 
-## Managing Participants
+## Managing Participants {#managing-participants}
 
 Because every contest is private until you say otherwise, the participant list *is* the access-control list. How you populate it depends on `admission_mode`, which you set through `apiUpdate` (the enum is `'private' | 'public' | 'registration'`):
 
@@ -59,13 +59,13 @@ For a private contest you invite people one at a time with `Contest::apiAddUser`
 
 Inviting a whole class one username at a time gets old fast, which is why `apiAddGroup` exists: build a group once (your "Period 3 CS" roster), and add the entire group to any contest in a single call. To hand off co-organizing duties, `apiAddAdmin` and `apiAddGroupAdmin` grant admin rights on the contest itself.
 
-## The Scoreboard
+## The Scoreboard {#the-scoreboard}
 
 The live standings are served by `apiScoreboard`, with an incremental event feed from `apiScoreboardEvents` that the front end replays to animate rank changes. Two fields you set at creation govern visibility, and they compose: **`scoreboard`** (0–100) controls how much of the *running* contest the board is live for — your freeze — while **`show_scoreboard_after`** decides whether it's fully revealed once the contest ends. A common configuration is `scoreboard: 100, show_scoreboard_after: true` for a transparent practice, versus `scoreboard: 0, show_scoreboard_after: true` for a "results at the end only" selection. `default_show_all_contestants_in_scoreboard` controls whether admins and non-participants are listed alongside contestants by default.
 
 Updates arrive in real time over the **Broadcaster** WebSocket at `wss://omegaup.com/events/` — a separate Go service in the [`omegaup/quark`](https://github.com/omegaup/quark) repo, not part of the PHP backend — so a solved problem climbs the board without anyone reloading. If your network is locked down, that WebSocket needs to be reachable (see the checklist below) or the board silently falls back to slower polling. When you run two sittings of the same event and want one combined ranking — a morning and an afternoon section, say — `apiScoreboardMerge` folds several contests into a single scoreboard.
 
-## Contest Modes
+## Contest Modes {#contest-modes}
 
 Beyond the per-field knobs, three broad modes cover almost every real event:
 
@@ -75,7 +75,7 @@ Beyond the per-field knobs, three broad modes cover almost every real event:
 
 **Lockdown.** An integrity mode you opt into purely by *which hostname* your contestants connect through — covered next, because at a school it's really a networking decision.
 
-## Running a Contest at a School (network checklist)
+## Running a Contest at a School (network checklist) {#running-a-contest-at-a-school-network-checklist}
 
 If contestants sit in a **school lab** or on a locked-down network, allow outbound **HTTPS (port 443)** to omegaUp and the few services it leans on. Everything is HTTPS — a request to port 80 just gets a redirect to 443 — so port 443 is all you need to open.
 
@@ -93,7 +93,7 @@ If contestants sit in a **school lab** or on a locked-down network, allow outbou
 
 There is one non-obvious firewall rule that will save your event: configure blocked hosts to **REJECT/DENY with an explicit response**, never **DROP**. On a DROP, the browser gets no answer and keeps waiting — it will hang for roughly **20–30 seconds** per blocked domain before giving up, and to a room full of students the whole page just looks frozen. An explicit reject fails fast and the UI stays responsive.
 
-### Lockdown mode (`arena.omegaup.com`)
+### Lockdown mode (`arena.omegaup.com`) {#lockdown-mode-arenaomegaupcom}
 
 Point contestants at `https://arena.omegaup.com/` instead of the normal host and they enter **lockdown mode**, built for when you need stronger guarantees that students can't pass information to each other through the platform. Much of the site's functionality is deliberately switched off, and **no per-contest exceptions are possible** — the value of the lock is that it can't be selectively unlocked. The features most commonly missed under lockdown are:
 
@@ -103,15 +103,15 @@ Point contestants at `https://arena.omegaup.com/` instead of the normal host and
 
 If your situation genuinely needs one of the things lockdown blocks, the answer is not to poke a hole in it — it's to not use lockdown, and connect through `https://omegaup.com` instead.
 
-### Contestant environment (Windows lab vs. the judge)
+### Contestant environment (Windows lab vs. the judge) {#contestant-environment-windows-lab-vs-the-judge}
 
 Submissions are graded on **Linux**, so any reasonably recent Linux distribution on the lab machines matches the evaluation environment exactly. Windows is where the papercuts live: code that pulls in the Windows-only `conio.h` header won't compile on the judge, and older Windows toolchains print `long long` with `%I64d` instead of the portable `%lld`. Coach your contestants toward POSIX-friendly I/O — `%lld` (or C++ streams) and standard headers — so a program that ran on the lab PC doesn't die on submission.
 
-### Large events (100+ participants)
+### Large events (100+ participants) {#large-events-100-participants}
 
 If you're planning a big contest — **100 or more** concurrent contestants — email **hello@omegaup.com** well in advance so the team can confirm capacity for your date. It's a courtesy that prevents a bad surprise on the day.
 
-## Related documentation
+## Related documentation {#related-documentation}
 
 - **[API Reference](../../reference/api.md)** — the full endpoint reference behind everything here.
 - **[Arena](../arena.md)** — the interface contestants actually see.

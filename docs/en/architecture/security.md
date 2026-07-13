@@ -4,7 +4,7 @@ description: Authentication, authorization, rate limiting, and sandboxing
 icon: bootstrap/shield
 ---
 
-# Security Architecture
+# Security Architecture {#security-architecture}
 
 omegaUp is, at its heart, a place where strangers upload code and we run it on our
 machines, during contests where the incentive to cheat is real. That single fact
@@ -49,7 +49,7 @@ flowchart TB
     Runner --> Sandbox
 ```
 
-## Everything travels over HTTPS
+## Everything travels over HTTPS {#everything-travels-over-https}
 
 The whole platform is HTTPS-only, and the reason is the contest-cheating threat model
 above: if any request could go out in plaintext, a session token or a problem statement
@@ -78,7 +78,7 @@ the curl handle is pinned with a client key and certificate
 from a frontend holding the right certificate, and the frontend will only submit to a
 grader presenting a certificate it trusts — neither end talks to a stranger.
 
-### Content-Security-Policy and framing
+### Content-Security-Policy and framing {#content-security-policy-and-framing}
 
 Before any controller runs,
 [`bootstrap.php`](https://github.com/omegaup/omegaup/blob/main/frontend/server/bootstrap.php)
@@ -92,7 +92,7 @@ handful of third parties we load JS from (Google/analytics, Facebook, Twitter,
 New Relic's agent). Violations POST themselves back to `/cspreport.php`, so a novel
 injection attempt shows up in our logs rather than silently executing.
 
-## The `ouat` session cookie
+## The `ouat` session cookie {#the-ouat-session-cookie}
 
 When a human logs in through a browser, their session is carried by a cookie named
 `ouat` — short for **omegaUp Auth Token**, defined as
@@ -155,7 +155,7 @@ sequenceDiagram
     S-->>U: Set-Cookie: ouat={entropy}-{id}-{sha256}; Secure; HttpOnly; SameSite=Lax
 ```
 
-### How a token becomes a session on every request
+### How a token becomes a session on every request {#how-a-token-becomes-a-session-on-every-request}
 
 On each API call, `Session::getCurrentSession()` pulls the token — from the
 `auth_token` request parameter if present, otherwise from the `ouat` cookie via
@@ -172,7 +172,7 @@ as anonymous rather than being handed an error. Logging out
 (`Session::unregisterSession()`) deletes the token row and overwrites the cookie with
 `setcookie(OMEGAUP_AUTH_TOKEN_COOKIE_NAME, 'deleted', 1, '/')`.
 
-## API tokens for programmatic access
+## API tokens for programmatic access {#api-tokens-for-programmatic-access}
 
 Humans get the `ouat` cookie; scripts and bots get **API tokens**, which arrive in an
 `Authorization` header rather than a cookie so they never depend on browser state.
@@ -207,7 +207,7 @@ that it was throttled but exactly how long to wait. Sessions are cached under
 `Cache::SESSION_PREFIX` keyed by the token, so resolving a token doesn't hit MySQL on
 every single call.
 
-## OAuth2 and third-party login
+## OAuth2 and third-party login {#oauth2-and-third-party-login}
 
 Not everyone registers with a password. omegaUp federates login to Google, Facebook, and
 GitHub, and all three funnel into the same private helper,
@@ -252,7 +252,7 @@ hand it to `thirdPartyLogin('Google', ...)`.
 > `frontend/server/config.php` — see the GitHub OAuth section in
 > [Development setup](../getting-started/development-setup.md).
 
-## Password storage
+## Password storage {#password-storage}
 
 Passwords that *are* stored belong to native accounts, and they're hashed with
 **Argon2id**, the memory-hard winner of the Password Hashing Competition, in
@@ -280,7 +280,7 @@ plaintext with `SecurityTools::hashString()`, and writes it back with
 `Identities::update()`. So a legacy password silently becomes an Argon2id password the
 next time its owner logs in, with no password reset required.
 
-## PASETO tokens for services
+## PASETO tokens for services {#paseto-tokens-for-services}
 
 There is a second, entirely separate token system, and it's easy to conflate with the
 `ouat` cookie, so to be precise: the browser session token is the opaque
@@ -311,7 +311,7 @@ and `course == $courseAlias`, and separately checks `ValidAt` for expiry — thr
 minted to clone course A therefore cannot be replayed to clone course B, even before it
 expires.
 
-## Lockdown mode for onsite contests
+## Lockdown mode for onsite contests {#lockdown-mode-for-onsite-contests}
 
 omegaUp runs official onsite contests (think ICPC-style rooms full of contestants on a
 locked-down LAN), and "lockdown mode" is how the same codebase serves both the open
@@ -354,7 +354,7 @@ core "read this contest's problems and submit to them" path keeps working. The c
 placed inline at each guarded operation rather than as a single global gate, precisely so
 that the safe operations remain available while the risky ones don't.
 
-## The omegajail sandbox
+## The omegajail sandbox {#the-omegajail-sandbox}
 
 Everything above protects the *frontend*. The last line of defense protects the
 *machines that run contestant code*, and it lives entirely in the Go grader
@@ -377,7 +377,7 @@ integration is in
 `OmegajailSandbox` builds a `bin/omegajail` command line and shells out to it via
 `invokeOmegajail()`.
 
-### What omegajail restricts
+### What omegajail restricts {#what-omegajail-restricts}
 
 omegajail wraps the untrusted process in a **chroot** (`--root /var/lib/omegajail`) with
 its own minimal `/dev` (a real `mknod`'d `/dev/null` — the sandbox even substitutes an
@@ -397,7 +397,7 @@ is why the sandbox exposes `--allow-sigsys-fallback` (surfaced as
 matters for a judge: a submission that tries to open a socket, fork a swarm of processes,
 or `execve` a shell is stopped at the kernel boundary, never inside our code.
 
-### Resource limits, and the verdicts they produce
+### Resource limits, and the verdicts they produce {#resource-limits-and-the-verdicts-they-produce}
 
 Limits are passed to omegajail as explicit flags and enforced by the sandbox, not by the
 Go process politely asking. From `OmegajailSandbox.Run()`:
@@ -423,7 +423,7 @@ helpful message (*"Make sure your class is named `<target>` and outside all pack
 because a Java file that compiles but produces the wrong class name would otherwise fail
 mysteriously at run time.
 
-## Related documentation
+## Related documentation {#related-documentation}
 
 - **[Runner internals](runner-internals.md)** — the grading pipeline that drives the sandbox
 - **[Authentication API](../reference/api.md)** — the login, token, and OAuth endpoints
