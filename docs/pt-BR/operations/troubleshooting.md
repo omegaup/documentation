@@ -3,7 +3,7 @@ title: Solução de problemas
 description: Problemas e soluções comuns
 icon: bootstrap/tools
 ---
-# Solução de problemas
+# Solução de problemas do {#troubleshooting}
 
 Esta página coleta as falhas operacionais que as pessoas realmente encontraram ao executar o omegaUp — a pilha não inicializa, a API não consegue acessar o MySQL, suas edições de frontend não aparecem ou o avaliador está inacessível e os envios travam. Para cada um, lideramos com o **erro bruto que você verá**, depois explicamos **o que realmente significa** e, em seguida, fornecemos a **correção** — porque um sintoma que você não consegue interpretar é um sintoma que você não consegue resolver, e o texto do erro é o que nos permite associar seu problema a uma causa conhecida.
 
@@ -13,7 +13,7 @@ Antes de você se aprofundar, um modelo mental que economiza muito tempo: **a pi
 
 ---
 
-## A pilha não inicializa
+## A pilha não inicializa {#the-stack-wont-boot}
 
 **Sintoma**: `docker compose up --no-build` nunca atinge o estado pronto ou um contêiner aparece como `Restarting` / `Exited` em `docker compose ps` em vez de `Up`.
 
@@ -54,7 +54,7 @@ docker compose up --no-build
 ```
 ---
 
-## MySQL não está acessível
+## MySQL não está acessível {#mysql-is-not-reachable}
 
 **Sintoma**: a API retorna 500 e o log do PHP ou o navegador mostra um erro de conexão como `SQLSTATE[HY000] [2002]` ou `Can't connect to MySQL server`. Nada que toque no banco de dados funciona, que é basicamente tudo.
 
@@ -90,7 +90,7 @@ docker compose up -d
 ```
 ---
 
-## O aplicativo da web não está mostrando minhas alterações
+## O aplicativo da web não está mostrando minhas alterações {#the-web-app-is-not-showing-my-changes}
 
 **Sintoma**: você editou um arquivo `.vue` ou `.ts`, salvou, recarregou o navegador — e ele ainda mostra a IU antiga.
 
@@ -110,9 +110,9 @@ Se você reconstruiu com sucesso e ele *ainda* está obsoleto, analise esta pequ
 
 ---
 
-## A motoniveladora está inacessível
+## A motoniveladora está inacessível {#the-grader-is-unreachable}
 
-**Sintoma**: os envios ficam para sempre sem veredicto ou uma ação administrativa que afeta a avaliação retorna 500. No log do PHP, você verá um erro de canal `Grader` — `curl failed` com um URL em `https://localhost:21680` ou a mensagem do terminal `Maximum retry attempts exceeded`.
+**Sintoma**: os envios ficam parados para sempre sem veredicto ou uma ação administrativa que afeta a avaliação retorna 500. No log do PHP você verá um erro de canal `Grader` — `curl failed` com um URL em `https://localhost:21680` ou a mensagem do terminal `Maximum retry attempts exceeded`.
 
 Aqui está a arquitetura que você deve manter para depurar isso, porque é o que o antigo wiki errou: **o avaliador não faz parte da base de código PHP.** O avaliador, o executor, o transmissor e a sandbox minijail são serviços **Go** separados de [github.com/omegaup/quark](https://github.com/omegaup/quark) (o armazenamento do problema é [github.com/omegaup/gitserver](https://github.com/omegaup/gitserver)), enviados como imagens Docker pré-construídas. O lado PHP é apenas um cliente HTTP fino: `\OmegaUp\Grader` (em [`frontend/server/src/Grader.php`](https://github.com/omegaup/omegaup/blob/main/frontend/server/src/Grader.php)) envia solicitações curl para **`OMEGAUP_GRADER_URL`**, cujo padrão é **`https://localhost:21680`** (`frontend/server/config.default.php`). Quando você envia, `\OmegaUp\Controllers\Run::apiCreate` eventualmente chama `\OmegaUp\Grader::getInstance()->grade($run, $source)`, que faz POST para o `/run/new/{run_id}/` do avaliador. Se essa chamada HTTP não puder ser concluída, o envio nunca será avaliado - então "avaliador inacessível" é na verdade "o PHP não pode concluir uma solicitação HTTP para `21680`".
 
@@ -143,7 +143,7 @@ Em seguida, pergunte diretamente ao avaliador como ele acha que é a fila. Há u
   }
 }
 ```
-Leia assim: um `run_queue_length` crescente com uma lista `runners` vazia significa **nenhum corredor está registrado** — o avaliador tem trabalho, mas ninguém para fazê-lo, então olhe para o contêiner do corredor. Um sistema íntegro, mas lento, mostra execuções em movimento através do `running`. Um `runners` vazio *e* zerar tudo geralmente significa que você está conversando com um aluno que acabou de aparecer (ou um falso - veja abaixo).
+Leia assim: um `run_queue_length` crescente com uma lista `runners` vazia significa **nenhum corredor está registrado** — o avaliador tem trabalho, mas ninguém para fazê-lo, então olhe para o contêiner do corredor. Um sistema íntegro, mas lento, mostra execuções passando pelo `running`. Um `runners` vazio *e* zerar tudo geralmente significa que você está conversando com um aluno que acabou de aparecer (ou um falso - veja abaixo).
 
 Quando o PHP realmente não consegue chegar ao `21680`, o cliente não desiste na primeira falha. `\OmegaUp\Grader::curlRequest` **tentativas até 3 vezes** com espera exponencial (`sleep(2^(n-1))`, limitado a 5 segundos), mas *apenas* para erros que classifica como transitórios — a lista atual em `isRetryableError` é `SSL connection timeout`, `HTTP/2 stream`, `SSL routines::unexpected eof`, `INTERNAL_ERROR`, `Connection timed out` e `Operation timed out`. Um `Connection refused` plano (o aluno não escuta) **não** pode ser tentado novamente e falha imediatamente, enquanto um aperto de mão TLS instável recebe três disparos antes de você finalmente ver o `Maximum retry attempts exceeded`. O orçamento por tentativa também é limitado: `CURLOPT_CONNECTTIMEOUT => 5` e `CURLOPT_TIMEOUT => 30`, portanto, uma única chamada suspensa não pode bloquear uma página por mais de aproximadamente 30 segundos. Se você vir `Maximum retry attempts exceeded` nos logs, são três tentativas transitórias com falha - um avaliador intermitentemente insalubre - e não um erro de configuração, que falharia na primeira tentativa.
 
@@ -151,7 +151,7 @@ Uma saída de emergência que vale a pena conhecer para trabalhos apenas de fron
 
 ---
 
-## Referência rápida de erros
+## Referência rápida de erro {#quick-error-reference}
 
 Estas são as assinaturas que você realmente verá, mapeadas na seção acima que as explica. Ao registrar um problema, cole o texto exato – a string de erro é o que nos permite associar seu sintoma a uma causa conhecida.
 
@@ -169,7 +169,7 @@ Estas são as assinaturas que você realmente verá, mapeadas na seção acima q
 
 ---
 
-## Obtendo mais ajuda
+## Obtendo mais ajuda {#getting-more-help}
 
 Se nada disso resolver:
 
@@ -177,7 +177,7 @@ Se nada disso resolver:
 2. **Pergunte no [Discord](https://discord.gg/gMEMX7Mrwe)** e sempre inclua a saída de log relevante; um sintoma sem seu texto de erro é difícil de localizar.
 3. **Registre um bug** com suas etapas de reprodução e o erro literal — consulte [Como obter ajuda](../getting-started/getting-help.md) para saber o que constitui um bom relatório.
 
-## Documentação Relacionada
+## Documentação Relacionada {#related-documentation}
 
 - **[Configuração do ambiente de desenvolvimento](../getting-started/development-setup.md)** — levantando a pilha e a solução de problemas no tempo de configuração para a qual esta página se refere.
 - **[Obter ajuda](../getting-started/getting-help.md)** — onde perguntar quando você estiver preso.

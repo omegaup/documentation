@@ -3,17 +3,17 @@ title: Solución de problemas
 description: Problemas comunes y soluciones
 icon: bootstrap/tools
 ---
-# Solución de problemas
+# Solución de problemas {#troubleshooting}
 
 Esta página recopila las fallas operativas que las personas realmente sufrieron al ejecutar omegaUp: la pila no arranca, la API no puede acceder a MySQL, las ediciones del frontend no aparecen o el evaluador es inaccesible y los envíos se bloquean. Para cada uno, presentamos el **error sin formato que verá**, luego explicamos **lo que realmente significa** y luego damos la **solución**, porque un síntoma que no puede interpretar es un síntoma que no puede resolver, y el texto del error es lo que nos permite relacionar su problema con una causa conocida.
 
 Muchos de los tropiezos del *tiempo de desarrollo* (pago de propiedad raíz, rastreos de MySQL `git push`, redirecciones HTTPS forzadas, submódulos faltantes) ya tienen reseñas detalladas en [Configuración del entorno de desarrollo](../getting-started/development-setup.md#troubleshooting). Esta página es la compañera del lado de operaciones: asume que la pila estuvo parada en algún momento y ahora se está comportando mal, y enlaza con la página de configuración siempre que la causa raíz sea realmente un error de configuración.
 
-Antes de profundizar, un modelo mental que ahorra mucho tiempo: **la pila local no es un proceso, es un gráfico de contenedores con un orden de arranque estricto.** En `docker-compose.yml`, el contenedor `frontend` `depends_on` `mysql`, `gitserver`, `grader` y `redis`; el `grader` espera a `mysql:13306` (`wait-for-it mysql:13306`) antes de comenzar; el `runner` espera a `grader:11302`; y `gitserver` también espera a `mysql:13306`. Entonces, cuando algo "no aparece", la primera pregunta siempre es *qué contenedor*, y la segunda es *qué estaba esperando*. `docker compose ps` responde a la primera; `docker compose logs <service>` responde al segundo.
+Antes de profundizar, un modelo mental que ahorra mucho tiempo: **la pila local no es un proceso, es un gráfico de contenedores con un orden de arranque estricto.** En `docker-compose.yml`, el contenedor `frontend` `depends_on` `mysql`, `gitserver`, `grader` y `redis`; el `grader` espera a `mysql:13306` (`wait-for-it mysql:13306`) antes de comenzar; el `runner` espera al `grader:11302`; y `gitserver` también espera a `mysql:13306`. Entonces, cuando algo "no aparece", la primera pregunta siempre es *qué contenedor*, y la segunda es *qué estaba esperando*. `docker compose ps` responde a la primera; `docker compose logs <service>` responde al segundo.
 
 ---
 
-## La pila no arranca
+## La pila no arranca {#the-stack-wont-boot}
 
 **Síntoma**: `docker compose up --no-build` nunca llega al estado listo o aparece un contenedor como `Restarting` / `Exited` en `docker compose ps` en lugar de `Up`.
 
@@ -54,11 +54,11 @@ docker compose up --no-build
 ```
 ---
 
-## MySQL no es accesible
+## MySQL no es accesible {#mysql-is-not-reachable}
 
 **Síntoma**: la API devuelve 500 y el registro de PHP o el navegador muestra un error de conexión como `SQLSTATE[HY000] [2002]` o `Can't connect to MySQL server`. Nada de lo que toca la base de datos funciona, que es básicamente todo.
 
-El hecho que soporta la carga aquí es **dónde vive realmente MySQL y cómo PHP le habla.** La base de datos se ejecuta en el contenedor `mysql` (`mysql:8.0.34`), y la interfaz se conecta a través de TCP: `OMEGAUP_DB_HOST` tiene por defecto **`mysql:13306`** (ver `frontend/server/config.default.php`), y `\OmegaUp\MySQLConnection` usa el controlador **mysqli** (`mysqli_init()` / `real_connect()`), no PDO. Entonces, "no se puede conectar" casi siempre significa una de tres cosas: el contenedor no está activo, está activo pero aún se inicializa, o algo está apuntando al cliente al lugar equivocado.
+El hecho que soporta la carga aquí es **dónde vive realmente MySQL y cómo PHP le habla.** La base de datos se ejecuta en el contenedor `mysql` (`mysql:8.0.34`), y la interfaz se conecta a través de TCP: `OMEGAUP_DB_HOST` tiene como valor predeterminado **`mysql:13306`** (ver `frontend/server/config.default.php`), y `\OmegaUp\MySQLConnection` usa el controlador **mysqli** (`mysqli_init()` / `real_connect()`), no PDO. Entonces, "no se puede conectar" casi siempre significa una de tres cosas: el contenedor no está activo, está activo pero aún se inicializa, o algo está apuntando al cliente al lugar equivocado.
 
 Primero, confirme que el contenedor realmente se esté ejecutando y que haya terminado de inicializarse. MySQL 8.0 hace un trabajo real en el primer arranque, y la API rechazará la conexión hasta que imprima su línea lista:
 
@@ -90,7 +90,7 @@ docker compose up -d
 ```
 ---
 
-## La aplicación web no muestra mis cambios
+## La aplicación web no muestra mis cambios {#the-web-app-is-not-showing-my-changes}
 
 **Síntoma**: editó un archivo `.vue` o `.ts`, guardó, recargó el navegador y todavía muestra la interfaz de usuario anterior.
 
@@ -106,15 +106,15 @@ cd /opt/omegaup && yarn run dev
 
 Hablando de eso: **en Windows, el observador pierde silenciosamente los eventos de cambio de archivos si su pago se encuentra bajo `/mnt/c/...`.** Los montajes de enlace de Docker a través del límite de Windows↔Linux no entregan eventos de inotify de manera confiable, por lo que `yarn dev:watch` no ve nada, nunca reconstruye y usted mira la salida obsoleta sin ningún error que lo explique. La solución no es un indicador de Webpack, sino mantener el repositorio dentro del sistema de archivos WSL2 de Linux (por ejemplo, `~/omegaup`), como se describe en la guía de configuración.
 
-Si ha reconstruido exitosamente y *todavía* está obsoleto, analice esta breve lista antes de culpar a las herramientas: confirme que los contenedores realmente estén activos (`docker compose up --no-build`); realice una actualización completa real (`Ctrl+Shift+R` o `Cmd+Shift+R` en macOS) o abra DevTools → Red → **Desactivar caché** para que el navegador deje de ofrecer su propio paquete almacenado en caché; y si tocó la firma de un controlador PHP, recuerde que el cliente API escrito (`api.ts` / `api_types.ts`) se **genera**; no reflejará los cambios del controlador hasta que `frontend/server/cmd/APITool.php` lo regenere, no Webpack. No edites manualmente esos dos archivos; regenerarlos.
+Si reconstruyó exitosamente y *todavía* está obsoleto, analice esta breve lista antes de culpar a las herramientas: confirme que los contenedores realmente estén activos (`docker compose up --no-build`); realice una actualización completa real (`Ctrl+Shift+R` o `Cmd+Shift+R` en macOS) o abra DevTools → Red → **Desactivar caché** para que el navegador deje de ofrecer su propio paquete almacenado en caché; y si tocó la firma de un controlador PHP, recuerde que el cliente API escrito (`api.ts` / `api_types.ts`) se **genera**; no reflejará los cambios del controlador hasta que `frontend/server/cmd/APITool.php` lo regenere, no Webpack. No edites manualmente esos dos archivos; regenerarlos.
 
 ---
 
-## El clasificador es inalcanzable
+## El nivelador es inalcanzable {#the-grader-is-unreachable}
 
 **Síntoma**: los envíos permanecen para siempre sin veredicto, o una acción de administrador que toca la calificación devuelve un 500. En el registro de PHP verá un error de canal `Grader`: `curl failed` con una URL en `https://localhost:21680`, o el mensaje de terminal `Maximum retry attempts exceeded`.
 
-Aquí está la arquitectura que debe mantener para depurar esto, porque es en lo que se equivocó la antigua wiki: **el evaluador no es parte del código base de PHP.** El evaluador, el corredor, la emisora y el entorno limitado de minijail son servicios **Go** separados de [github.com/omegaup/quark](https://github.com/omegaup/quark) (el almacenamiento del problema es [github.com/omegaup/gitserver](https://github.com/omegaup/gitserver)), enviado como imágenes de Docker prediseñadas. El lado PHP es solo un cliente HTTP ligero: `\OmegaUp\Grader` (en [`frontend/server/src/Grader.php`](https://github.com/omegaup/omegaup/blob/main/frontend/server/src/Grader.php)) envía solicitudes curl a **`OMEGAUP_GRADER_URL`**, que por defecto es **`https://localhost:21680`** (`frontend/server/config.default.php`). Cuando envía, `\OmegaUp\Controllers\Run::apiCreate` finalmente llama a `\OmegaUp\Grader::getInstance()->grade($run, $source)`, que envía un PUBLICACIÓN al `/run/new/{run_id}/` del clasificador. Si esa llamada HTTP no se puede completar, el envío nunca se califica, por lo que "calificador inalcanzable" es en realidad "el PHP no puede completar una solicitud HTTP a `21680`".
+Aquí está la arquitectura que debe mantener para depurar esto, porque es en lo que se equivocó la antigua wiki: **el evaluador no es parte del código base de PHP.** El evaluador, el corredor, la emisora y el entorno limitado de minijail son servicios **Go** separados de [github.com/omegaup/quark](https://github.com/omegaup/quark) (el almacenamiento del problema es [github.com/omegaup/gitserver](https://github.com/omegaup/gitserver)), enviado como imágenes de Docker prediseñadas. El lado PHP es solo un cliente HTTP ligero: `\OmegaUp\Grader` (en [`frontend/server/src/Grader.php`](https://github.com/omegaup/omegaup/blob/main/frontend/server/src/Grader.php)) envía solicitudes curl a **`OMEGAUP_GRADER_URL`**, que por defecto es **`https://localhost:21680`** (`frontend/server/config.default.php`). Cuando envía, `\OmegaUp\Controllers\Run::apiCreate` finalmente llama a `\OmegaUp\Grader::getInstance()->grade($run, $source)`, que envía una PUBLICACIÓN al `/run/new/{run_id}/` del clasificador. Si esa llamada HTTP no se puede completar, el envío nunca se califica, por lo que "calificador inalcanzable" es en realidad "el PHP no puede completar una solicitud HTTP a `21680`".
 
 Esa conexión se **autentica mutuamente a través de TLS**, y aquí es donde las configuraciones locales se interrumpen con mayor frecuencia. La llamada curl en `\OmegaUp\Grader::curlRequestSingle` presenta un certificado de cliente (`CURLOPT_SSLCERT => /etc/omegaup/frontend/certificate.pem`, `CURLOPT_SSLKEY => /etc/omegaup/frontend/key.pem`), fija la CA a ese mismo certificado (`CURLOPT_CAINFO`) y, lo que es más importante, verifica estrictamente al par (`CURLOPT_SSL_VERIFYPEER => true`, `CURLOPT_SSL_VERIFYHOST => 2`, TLS 1.2). Por lo tanto, un certificado autofirmado o que no coincide no se aprueba silenciosamente; falla el apretón de manos. Si el error del clasificador `curl failed` menciona un problema de certificado/SSL en lugar de una conexión rechazada, sospeche que los certificados en `/etc/omegaup/frontend/`, no que el clasificador esté inactivo.
 
@@ -151,7 +151,7 @@ Una vía de escape que vale la pena conocer para el trabajo de front-end: en rea
 
 ---
 
-## Referencia rápida de errores
+## Referencia rápida de errores {#quick-error-reference}
 
 Estas son las firmas que realmente verá, asignadas a la sección anterior que las explica. Cuando presente un problema, pegue el texto exacto: la cadena de error es lo que nos permite relacionar su síntoma con una causa conocida.
 
@@ -161,7 +161,7 @@ Estas son las firmas que realmente verá, asignadas a la sección anterior que l
 | `Permission denied` creando `phpminiadmin` / bajo `stuff/venv/`, bucle de reinicio del contenedor | Repositorio clonado como raíz o `sudo docker compose`: el montaje de enlace es propiedad de la raíz | [No aparece (configuración)](../getting-started/development-setup.md#my-dev-environment-wont-come-up) |
 | `SQLSTATE[HY000] [2002]` / `Can't connect to MySQL server` | Contenedor MySQL inactivo, aún inicializándose o host incorrecto | [No se puede acceder a MySQL](#mysql-is-not-reachable) |
 | `Can't connect ... through socket '/var/run/mysqld/mysqld.sock'` | Cliente host que utiliza un socket Unix; MySQL es solo TCP en `13306` | [git push MySQL socket fix (configuración)](../getting-started/development-setup.md#git-push-fails-with-cant-connect-to-local-mysql-server) |
-| `maximum statement execution time exceeded` | Consulta superó el contenedor `--max_execution_time=30000` (30s) | [No se puede acceder a MySQL](#mysql-is-not-reachable) |
+| `maximum statement execution time exceeded` | La consulta superó el `--max_execution_time=30000` del contenedor (30s) | [No se puede acceder a MySQL](#mysql-is-not-reachable) |
 | `Lock wait timeout exceeded` | Bloqueo de fila retenido más allá de `--lock_wait_timeout=10` (10 s), cancelado a propósito | [No se puede acceder a MySQL](#mysql-is-not-reachable) |
 | Ediciones invisibles después de recargar | El navegador sirve para la compilación del paquete web, no para el código fuente; necesita una reconstrucción | [Los cambios no se muestran](#the-web-app-is-not-showing-my-changes) |
 | Canal `Grader` `curl failed` @ `https://localhost:21680` | PHP no puede completar la llamada HTTPS al evaluador Go | [El clasificador es inalcanzable](#the-grader-is-unreachable) |
@@ -169,7 +169,7 @@ Estas son las firmas que realmente verá, asignadas a la sección anterior que l
 
 ---
 
-## Obtener más ayuda
+## Obteniendo más ayuda {#getting-more-help}
 
 Si nada de esto lo resuelve:
 
@@ -177,7 +177,7 @@ Si nada de esto lo resuelve:
 2. **Pregunte en [Discord](https://discord.gg/gMEMX7Mrwe)** e incluya siempre el resultado del registro relevante; Es difícil ubicar un síntoma sin su texto de error.
 3. **Presente un error** con los pasos de reproducción y el error textual; consulte [Obtener ayuda](../getting-started/getting-help.md) para saber qué constituye un buen informe.
 
-## Documentación relacionada
+## Documentación relacionada {#related-documentation}
 
 - **[Configuración del entorno de desarrollo](../getting-started/development-setup.md)**: poner en marcha la pila y la solución de problemas en el momento de la configuración a los que remite esta página.
 - **[Obtener ayuda](../getting-started/getting-help.md)**: dónde preguntar cuando estás atascado.

@@ -3,14 +3,14 @@ title: Configuração do ambiente de desenvolvimento
 description: Guia completo para configurar seu ambiente de desenvolvimento local omegaUp
 icon: bootstrap/tools
 ---
-# Configuração do ambiente de desenvolvimento
+# Configuração do ambiente de desenvolvimento {#development-environment-setup}
 
 Esta página orienta você na criação de um omegaUp local completo - frontend, API PHP, MySQL e Go grader/runner/gitserver - em sua própria máquina com Docker. A pilha inteira reside em alguns contêineres descritos por `docker-compose.yml`, então você não instala PHP 8.1, MySQL 8.0, Redis ou RabbitMQ manualmente; você extrai imagens pré-construídas e as traz à tona. Preferimos Docker para todos agora - a antiga VM Vagrant/VirtualBox provisionada de [omegaup/deploy](https://github.com/omegaup/deploy) está obsoleta e não é mais o caminho suportado, então se você encontrar uma página wiki informando para `vagrant up`, pule-a.
 
 !!! dica "Vídeo Tutorial"
     Se você preferir assistir a ler, temos um [vídeo tutorial](http://www.youtube.com/watch?v=H1PG4Dvje88) que percorre a mesma configuração de ponta a ponta.
 
-## Pré-requisitos
+## Pré-requisitos {#prerequisites}
 
 Antes de mais nada, instale as duas peças de ferramentas Docker e Git:
 
@@ -21,19 +21,19 @@ Antes de mais nada, instale as duas peças de ferramentas Docker e Git:
 !!! aviso "Novo no Git?"
     Se você ainda não está confiante com o Git, leia [este tutorial do Git](https://github.com/shekhargulati/git-the-missing-tutorial) antes de começar. Tudo após o clone – ramificações, solicitações pull, manutenção do `main` sincronizado – pressupõe que você possa se movimentar confortavelmente no Git.
 
-### Linux: adicione-se ao grupo `docker`
+### Linux: adicione-se ao grupo `docker` {#linux-add-yourself-to-the-docker-group}
 
 No Linux, execute isto uma vez para poder invocar `docker` sem `sudo`:
 
 ```bash
 sudo usermod -a -G docker $USER
 ```
-Em seguida, **saia e faça login novamente** para que a nova associação ao grupo entre em vigor. Isso é mais importante do que parece: se você ignorá-lo e começar a buscar `sudo docker compose up`, a árvore do projeto montada em bind acabará sendo propriedade de `root`, e o usuário não-root do contêiner não poderá mais gravar nele - o que surge mais tarde como um loop de reinicialização desconcertante (consulte [Meu ambiente de desenvolvimento não aparece](#my-dev-environment-wont-come-up)). Faça isso da maneira certa uma vez e você evitará todo o tipo de problema.
+Em seguida, **saia e faça login novamente** para que a nova associação ao grupo entre em vigor. Isso é mais importante do que parece: se você ignorá-lo e começar a buscar o `sudo docker compose up`, a árvore do projeto montada em bind acabará sendo propriedade do `root`, e o usuário não-root do contêiner não poderá mais gravar nele - o que surge mais tarde como um loop de reinicialização desconcertante (consulte [Meu ambiente de desenvolvimento não aparece] (#my-dev-environment-wont-come-up)). Faça isso da maneira certa uma vez e você evitará todo o tipo de problema.
 
 !!! observe "Windows: desenvolva dentro do WSL2"
-    No Windows, execute tudo por meio de [WSL2](https://docs.docker.com/desktop/features/wsl) com a integração WSL do Docker Desktop habilitada e - esta é a parte de suporte de carga - **clone o repositório no sistema de arquivos Linux** (em algum lugar na sua casa WSL, por exemplo, `~/omegaup`), *não* em `/mnt/c/...`. As montagens de ligação do Docker que cruzam o limite do Windows↔Linux são lentas e, pior, o `webpack --watch` dentro do contêiner perde silenciosamente eventos de alteração de arquivo no `/mnt/c`, para que suas edições nunca acionem uma reconstrução e você fique olhando para uma saída obsoleta. Manter o checkout no lado do Linux é o substituto moderno para a antiga dança de sincronização de arquivos WinSCP/Xming da era Vagrant.
+    No Windows, execute tudo por meio de [WSL2](https://docs.docker.com/desktop/features/wsl) com a integração WSL do Docker Desktop habilitada e — esta é a parte de suporte de carga — **clone o repositório no sistema de arquivos Linux** (em algum lugar na sua casa WSL, por exemplo, `~/omegaup`), *não* em `/mnt/c/...`. As montagens de ligação do Docker que cruzam o limite do Windows↔Linux são lentas e, pior, o `webpack --watch` dentro do contêiner perde silenciosamente eventos de alteração de arquivo no `/mnt/c`, para que suas edições nunca acionem uma reconstrução e você fique olhando para uma saída obsoleta. Manter o checkout no lado do Linux é o substituto moderno para a antiga dança de sincronização de arquivos WinSCP/Xming da era Vagrant.
 
-## Etapa 1: bifurcar e clonar
+## Etapa 1: bifurcar e clonar {#step-1-fork-and-clone}
 
 Fork [omegaup/omegaup](https://github.com/omegaup/omegaup) no GitHub primeiro - você envia para seu fork, não para o repositório principal - depois clona seu fork em um diretório vazio. O sinalizador `--recurse-submodules` é importante: várias dependências de front-end de terceiros (`pagedown` para o editor Markdown, `iso-3166-2.js` para códigos de país, `mathjax` para renderização matemática e muito mais) residem em submódulos Git e a construção é interrompida sem eles.
 
@@ -46,7 +46,7 @@ Se você clonou sem `--recurse-submodules`, ou um submódulo parece vazio, extra
 ```bash
 git submodule update --init --recursive
 ```
-## Etapa 2: Abra os contêineres
+## Etapa 2: Abra os contêineres {#step-2-bring-up-the-containers}
 
 Na raiz do repositório (`omegaup/`), extraia as imagens e inicie a pilha:
 
@@ -81,7 +81,7 @@ Em execuções posteriores você pode pular o `pull` e apenas iniciar a pilha:
 ```bash
 docker compose up --no-build
 ```
-## Etapa 3: abra sua instância local
+## Etapa 3: Abra sua instância local {#step-3-open-your-local-instance}
 
 Com os contêineres em execução, seu omegaUp local está em:
 
@@ -89,7 +89,7 @@ Com os contêineres em execução, seu omegaUp local está em:
 
 Essa é a porta `8001`, publicada a partir do contêiner frontend em `docker-compose.yml`. Observe que é `http` simples - consulte [a correção do redirecionamento HTTPS do navegador] (#my-browser-keeps-forcing-https) se o seu navegador insistir em reescrevê-lo.
 
-## Etapa 4: coloque um shell dentro do contêiner
+## Etapa 4: Obtenha um Shell dentro do contêiner {#step-4-get-a-shell-inside-the-container}
 
 Quase todos os comandos dev - executando testes, invocando scripts `stuff/`, vasculhando o banco de dados - são executados *dentro* do contêiner frontend, porque é onde o PHP 8.1, o Node, o Yarn e as ferramentas realmente residem. Abra um shell com um destes (eles são equivalentes):
 
@@ -98,9 +98,9 @@ docker compose exec frontend /bin/bash
 # or, by container name:
 docker exec -it omegaup-frontend-1 /bin/bash
 ```
-O nome exato do contêiner depende da versão do Compose - a v2 o nomeia como `omegaup-frontend-1` (hífenes), o `docker-compose` mais antigo usava `omegaup_frontend_1` (sublinhados). Se você não tiver certeza do que possui, `docker compose ps` lista os nomes reais. Dentro do contêiner, a base de código é montada em **`/opt/omegaup`** — os mesmos arquivos que você edita em seu host, portanto, um salvamento em sua máquina fica instantaneamente visível no contêiner.
+O nome exato do contêiner depende da versão do Compose - a v2 o nomeia como `omegaup-frontend-1` (hífens), o `docker-compose` mais antigo usava `omegaup_frontend_1` (sublinhados). Se você não tiver certeza do que possui, `docker compose ps` lista os nomes reais. Dentro do contêiner, a base de código é montada em **`/opt/omegaup`** — os mesmos arquivos que você edita em seu host, portanto, um salvamento em sua máquina fica instantaneamente visível no contêiner.
 
-## Contas de Desenvolvimento
+## Contas de desenvolvimento {#development-accounts}
 
 Sua nova instalação vem com duas contas já propagadas, para que você possa fazer login imediatamente sem registrar nada:
 
@@ -127,7 +127,7 @@ Além disso, o conjunto de testes gera uma lista estável de contas nas quais vo
 
 **Sinta-se à vontade para criar quantos usuários precisar** para testar suas alterações. No modo de desenvolvimento, a verificação de e-mail está desativada, portanto qualquer endereço fictício funciona — você nunca precisa verificar uma caixa de entrada para ativar uma conta.
 
-## Estrutura da base de código
+## Estrutura da base de código {#codebase-structure}
 
 O código omegaUp reside em `/opt/omegaup` dentro do contêiner (e em seu clone no host - é a mesma árvore montada em ligação). Estes são os diretórios nos quais trabalhamos ativamente no dia a dia:
 
@@ -141,7 +141,7 @@ Uma coisa que confunde as pessoas: **avaliador, corredor, locutor e sandbox mini
 
 Para um tour mais detalhado, consulte [Visão geral da arquitetura](../architecture/index.md) e [Arquitetura de front-end](../architecture/frontend.md). O fluxo de trabalho de solicitação branch-and-pull reside em [Contribuindo](contributing.md).
 
-## Edição com código do Visual Studio
+## Edição com código do Visual Studio {#editing-with-visual-studio-code}
 
 Você pode editar em seu host com [Visual Studio Code](https://code.visualstudio.com/) enquanto a pilha continua em execução no Docker. Como seu clone é montado em `/opt/omegaup`, um salvamento no host é um salvamento no contêiner - recarregamento a quente e Webpack dentro do contêiner o coletam sem nenhuma etapa de cópia, que é exatamente o atrito que a antiga configuração do Vagrant-plus-WinSCP existia para contornar e não precisa mais.
 
@@ -152,11 +152,11 @@ Duas maneiras de trabalhar, dependendo de quanto você deseja que as próprias f
 
 Adicione as extensões PHP, Vue e ESLint conforme os arquivos que você toca as exigem.
 
-## GitHub OAuth (local "Entrar com GitHub")
+## GitHub OAuth (local "Entrar com GitHub") {#github-oauth-local-sign-in-with-github}
 
 Para fazer o botão **Entrar com GitHub** funcionar em **`http://localhost:8001/`**, registre um aplicativo OAuth no GitHub e entregue suas credenciais à sua configuração local.
 
-### 1. Crie o aplicativo OAuth no GitHub
+### 1. Crie o aplicativo OAuth no GitHub {#1-create-the-oauth-app-on-github}
 
 Abra [Configurações do desenvolvedor do GitHub](https://github.com/settings/developers), vá para **Aplicativos OAuth → Novo aplicativo OAuth** e defina:
 
@@ -166,7 +166,7 @@ Abra [Configurações do desenvolvedor do GitHub](https://github.com/settings/de
 
 Registre-o, copie o **ID do cliente** e, em seguida, gere e copie o **Segredo do cliente** — o GitHub mostra o segredo apenas uma vez, então pegue-o agora.
 
-### 2. Configure o omegaUp localmente
+### 2. Configure omegaUp localmente {#2-configure-omegaup-locally}
 
 Coloque as credenciais em **`frontend/server/config.php`**, o arquivo de substituições locais (crie-o se não existir). Este arquivo é apenas para *sua* máquina — nunca envie-o e nunca coloque segredos no `config.default.php` com versão controlada.
 
@@ -178,15 +178,15 @@ define('OMEGAUP_GITHUB_CLIENT_SECRET', 'your_real_client_secret_here');
 Geralmente, não é necessária uma reinicialização completa do Compose para que um novo PHP `define` tenha efeito, mas se o botão permanecer acinzentado, reinicie o contêiner de front-end uma vez.
 
 !!! falha "Nunca confirme segredos OAuth"
-    Reverta ou exclua `config.php` antes de enviar e mantenha seu ID/segredo de cliente em um gerenciador de senhas - se o contêiner for recriado e levar `config.php` com ele, você os desejará à mão. Se o botão de login permanecer inativo, o ID do Cliente está faltando ou errado em `config.php`; se você alterar o host ou a porta, atualize o URL de retorno de chamada no aplicativo GitHub OAuth para corresponder ou o redirecionamento falhará.
+    Reverta ou exclua `config.php` antes de enviar e mantenha seu ID/segredo de cliente em um gerenciador de senhas - se o contêiner for recriado e levar `config.php` com ele, você os desejará à mão. Se o botão de login permanecer inativo, o ID do Cliente está ausente ou errado em `config.php`; se você alterar o host ou a porta, atualize o URL de retorno de chamada no aplicativo GitHub OAuth para corresponder ou o redirecionamento falhará.
 
-Consulte [Segurança → OAuth](../architecture/security.md#oauth-integration) para saber como o login de terceiros se encaixa na plataforma.
+Consulte [Segurança → OAuth](../architecture/security.md#oauth2-and-third-party-login) para saber como o login de terceiros se encaixa na plataforma.
 
-## Solução de problemas
+## Solução de problemas {#troubleshooting}
 
 Aqui estão os problemas que as pessoas realmente enfrentam, aproximadamente na ordem em que os atingem – primeiro o erro bruto, depois o que ele significa e depois a correção.
 
-### O aplicativo da web não está mostrando minhas alterações!
+### O aplicativo da web não está mostrando minhas alterações! {#the-web-app-is-not-showing-my-changes}
 
 Você editou um arquivo `.vue` ou `.ts`, salvou, recarregou – e o navegador mostra o antigo. O frontend é servido a partir de um *build* do Webpack, portanto, uma edição não construída fica invisível, não importa quantas vezes você atualize. Reconstrua-o de dentro do contêiner:
 
@@ -194,9 +194,9 @@ Você editou um arquivo `.vue` ou `.ts`, salvou, recarregou – e o navegador mo
 docker compose exec frontend /bin/bash
 cd /opt/omegaup && yarn run dev
 ```
-`yarn run dev` executa o Webpack uma vez no frontend; se você estiver iterando e não quiser executá-lo novamente manualmente após cada salvamento, use `yarn dev:watch`, que observa a árvore e a reconstrói conforme as alterações. (No Windows, é exatamente por isso que seu checkout deve estar no sistema de arquivos WSL2 Linux e não no `/mnt/c` — o observador perde eventos de mudança além desse limite.) Se ainda não estiver atualizando após uma compilação bem-sucedida, certifique-se de que os contêineres estejam realmente em execução (`docker compose up --no-build`) e, caso contrário, pergunte em nossos [canais de comunicação] (getting-help.md).
+`yarn run dev` executa o Webpack uma vez no frontend; se você estiver iterando e não quiser executá-lo novamente manualmente após cada salvamento, use `yarn dev:watch`, que observa a árvore e reconstrói conforme as alterações. (No Windows, é exatamente por isso que seu checkout deve estar no sistema de arquivos WSL2 Linux e não no `/mnt/c` — o observador perde eventos de mudança além desse limite.) Se ainda não estiver atualizando após uma compilação bem-sucedida, certifique-se de que os contêineres estejam realmente em execução (`docker compose up --no-build`) e, caso contrário, pergunte em nossos [canais de comunicação] (getting-help.md).
 
-### Meu ambiente de desenvolvimento não aparece :(
+### Meu ambiente de desenvolvimento não aparece :( {#my-dev-environment-wont-come-up}
 
 **Sintomas**: os logs mostram `Permission denied` ao criar `phpminiadmin` ou gravar em `stuff/venv/`, o contêiner `developer-environment` sai e reinicia em um loop e o site nunca é veiculado em `http://localhost:8001`.
 
@@ -204,13 +204,13 @@ cd /opt/omegaup && yarn run dev
 
 **Consertar**: não tente "consertar" a árvore de propriedade da raiz no local; não vale a pena lutar. Como um usuário normal, clone novamente em seu diretório inicial, certifique-se de ter se adicionado ao grupo `docker` (`sudo usermod -a -G docker $USER`, depois efetue logout e login novamente) e execute **`docker compose` sem `sudo`**. Nunca `sudo git clone`.
 
-### Meu navegador continua forçando HTTPS
+### Meu navegador continua forçando HTTPS {#my-browser-keeps-forcing-https}
 
 Se o seu navegador reescrever `http://localhost:8001` para `https://` e não conseguir se conectar, esse é o comportamento HSTS/HTTPS forçado do navegador, não omegaUp - a instância local fala apenas HTTP simples. Desative a política HTTPS forçada para `localhost` seguindo [este guia](https://hmheng.medium.com/exclude-localhost-from-chrome-chromium-browsers-forced-https-redirection-642c8befa9b).
 
 ---
 
-### `git push` falha com um rastreamento do MySQL
+### `git push` falha com um rastreamento MySQL {#git-push-fails-with-a-mysql-traceback}
 
 Quando você envia push, os ganchos de política do omegaUp executam `stuff/policy-tool.py`, que precisa consultar o banco de dados. Em muitas máquinas, o primeiro push termina com um longo traceback do Python terminando em:
 
@@ -230,7 +230,7 @@ Esse `FileNotFoundError: ... '/usr/bin/mysql'` significa que não há binário d
 ```bash
 sudo apt-get install mysql-client
 ```
-### `git push` falha com "Não é possível conectar ao servidor MySQL local"
+### `git push` falha com "Não é possível conectar ao servidor MySQL local" {#git-push-fails-with-cant-connect-to-local-mysql-server}
 
 Às vezes, o cliente é instalado, mas o push ainda falha, desta vez com um erro de soquete antes do mesmo rastreamento:
 
@@ -261,18 +261,18 @@ Depois disso, a ferramenta de política se conecta via TCP ao MySQL Dockerizado 
 
 ---
 
-### A saída de erros de script `stuff/`
+### Um erro de script `stuff/` sai do {#a-stuff-script-errors-out}
 
 Se você executar um dos scripts `stuff/` diretamente em seu host e obter o mesmo rastreamento `/usr/bin/mysql` mostrado acima, a causa comum é que **você o executou fora do contêiner**. A maioria desses scripts assume as ferramentas e o acesso ao banco de dados que existem apenas dentro do contêiner front-end. Abra um shell no contêiner (`docker compose exec frontend /bin/bash`) e execute-o lá. (Os ganchos `git push` acima são a exceção deliberada - aqueles *fazem* execução no host, e é por isso que eles precisam do cliente MySQL do lado do host e da configuração TCP.)
 
-### Módulos de terceiros ausentes
+### Módulos de terceiros ausentes {#missing-third-party-modules}
 
-Se a construção ou os testes falharem, reclamando de módulos ausentes em `frontend/www/third_party/js/`, seus submódulos não serão verificados. Puxe-os para dentro:
+Se a compilação ou os testes falharem, reclamando de módulos ausentes em `frontend/www/third_party/js/`, seus submódulos não serão verificados. Puxe-os para dentro:
 
 ```bash
 git submodule update --init --recursive
 ```
-### Erros de nó/fio após realizar grandes alterações
+### Erros de nó/fio após realizar grandes alterações {#node-yarn-errors-after-pulling-big-changes}
 
 Se o Node ou o Yarn começarem a gerar erros logo após você obter um grande aumento de dependência, a imagem de front-end pré-construída pode estar fora de sintonia com o novo `package.json`. Reconstrua:
 
@@ -284,13 +284,13 @@ docker compose up
 
 Se você encontrar algo não abordado aqui, registre um problema em [omegaup/deploy/issues](https://github.com/omegaup/deploy/issues) com suas etapas de reprodução e a mensagem de erro exata — o texto do erro é o que nos permite associar seu sintoma a um sintoma conhecido.
 
-## Próximas etapas
+## Próximas etapas {#next-steps}
 
 - **[Aprenda como contribuir](contributing.md)** — filiais, controles remotos e envio de pull request.
 - **[Revise as diretrizes de codificação](../development/coding-guidelines.md)** — as convenções às quais mantemos o código.
 - **[Explore a arquitetura](../architecture/index.md)** — como as peças que você acabou de inicializar se encaixam.
 
-## Obtendo ajuda
+## Obtendo ajuda {#getting-help}
 
 Se você estiver preso em algo que esta página não cobre:
 

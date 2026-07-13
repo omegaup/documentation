@@ -3,13 +3,13 @@ title: Arquitetura de emissora
 description: Servidor WebSocket para atualizações em tempo real
 icon: bootstrap/cloud
 ---
-# Arquitetura de emissora
+# Arquitetura da emissora {#broadcaster-architecture}
 
 A emissora é o pequeno serviço Go que dá vida à arena. Quando você está participando de um concurso e sua inscrição muda de "julgamento" para **AC** verde, ou o placar é reorganizado porque um rival acabou de resolver o problema C, essa atualização não chegou porque seu navegador a pesquisou - ela foi *enviada* para você por meio de um WebSocket que a emissora está mantendo aberto desde que você abriu a página. Todo o seu trabalho é manter uma conexão duradoura por participante e espalhar eventos quase em tempo real (veredictos, mudanças no placar, esclarecimentos) exatamente para as pessoas que têm permissão para vê-los.
 
-Ele fica no repositório Go [`omegaup/quark`](https://github.com/omegaup/quark) separado (**não** no monorepo PHP), junto com o avaliador e o executor. O frontend PHP nunca fala o próprio WebSocket; ele apenas envia JSON simples para o avaliador, e o avaliador o encaminha aqui. Um modelo mental útil de uma linha: **o transmissor é uma estrutura pub/sub sem estado na memória cujas assinaturas são autorizadas pelo frontend PHP e cujos eventos são publicados pelo avaliador.** Ele não contém banco de dados, não armazena nada em cache e, se travar e reiniciar, cada cliente simplesmente se reconecta e o mundo está inteiro novamente — a única coisa perdida são alguns segundos de "vivaidade".
+Ele fica no repositório Go [`omegaup/quark`](https://github.com/omegaup/quark) separado (**não** no monorepo PHP), junto com o avaliador e o executor. O frontend do PHP nunca fala o próprio WebSocket; ele apenas envia JSON simples para o avaliador, e o avaliador o encaminha aqui. Um modelo mental útil de uma linha: **o transmissor é uma estrutura pub/sub sem estado na memória cujas assinaturas são autorizadas pelo frontend PHP e cujos eventos são publicados pelo avaliador.** Ele não contém banco de dados, não armazena nada em cache e, se travar e reiniciar, cada cliente simplesmente se reconecta e o mundo está inteiro novamente — a única coisa perdida são alguns segundos de "vivaidade".
 
-## Situando: quem fala com quem
+## Situando: quem fala com quem {#situating-it-who-talks-to-whom}
 
 A emissora expõe **dois** servidores HTTP em duas portas diferentes, porque tem dois públicos completamente diferentes com dois níveis de confiança completamente diferentes.
 
@@ -37,7 +37,7 @@ flowchart LR
     BC -->|"GET /api/user/validateFilter"| Validate
     BC -->|"push JSON frame"| Client
 ```
-## Um assinante se conecta e o PHP decide o que pode ouvir
+## Um assinante se conecta e o PHP decide o que pode ouvir {#a-subscriber-connects-and-php-decides-what-it-may-hear}
 
 Tudo começa quando um navegador abre a arena. O [`events_socket.ts`](https://github.com/omegaup/omegaup/blob/main/frontend/www/js/omegaup/arena/events_socket.ts) do frontend cria uma URL como `wss://omegaup.com/events/?filter=/problemset/1234`, anexando o token do placar quando a página foi aberta por meio de um link de placar público (`.../problemset/1234/<token>`) e chama `new WebSocket(this.uri, 'com.omegaup.events')`. O parâmetro de consulta `filter` é o coração do protocolo: é uma lista separada por vírgulas de caminhos de recursos nos quais o cliente afirma estar interessado.
 
@@ -47,7 +47,7 @@ Depois vem a transferência crucial: a emissora **não decide por si mesma** se 
 
 Se o frontend responder `200`, seu corpo JSON — modelado por `ValidateFilterResponse` — informa ao transmissor quem você é: seu `user`, se você é um `admin` global e as listas de recursos `problem_admin`, `contest_admin` e `problemset_admin` que você administra. A emissora os armazena em mapas por assinante e os consulta em cada mensagem. Se o frontend responder a qualquer outra coisa, `NewSubscriber` retorna um `UpstreamError` carregando o código de status e o corpo do frontend, e o transmissor retransmite esse status exato diretamente para o navegador - então um `403` do PHP se torna um `403` na atualização do WebSocket, e o cliente nunca se junta. Este é o portão de autorização único; não há nova verificação posteriormente, e é por isso que a emissora pode se dar ao luxo de ser um loop de fan-out rápido e idiota depois.
 
-## Filtros: como uma mensagem encontra seu público
+## Filtros: como uma mensagem encontra seu público {#filters-how-one-message-finds-its-audience}
 
 Um assinante não está inscrito em "canais" em nenhum sentido com estado - ele carrega uma lista de predicados `Filter` analisados daquela string separada por vírgula por `NewFilter` em [`broadcaster/filter.go`](https://github.com/omegaup/quark/blob/main/broadcaster/filter.go). Quando chega uma mensagem, a emissora pergunta a cada assinante "algum dos seus filtros corresponde a este?" e entrega somente se a resposta for sim. Existem atualmente cinco formas de filtro, cada uma com um caminho de barra inicial:
 
@@ -59,7 +59,7 @@ Um assinante não está inscrito em "canais" em nenhum sentido com estado - ele 
 
 Vale a pena ler literalmente a lógica do portão, porque é a razão pela qual um competidor nunca vê a corrida privada de outro competidor. `ContestFilter.Matches` retorna verdadeiro somente quando `msg.Contest == f.contest` **e** pelo menos um de: `subscriber.admin`, `msg.Public`, `subscriber.user != "" && msg.User == subscriber.user` ou o concurso está no `contestAdminMap` do assinante. Portanto, um não-administrador participando de um concurso recebe as transmissões do placar *público* e as atualizações de execução *suas próprias*, mas um evento privado por usuário endereçado a outra pessoa falha em todas as cláusulas e é ignorado silenciosamente. O filtro do navegador do frontend é deliberadamente grosseiro (`/problemset/<id>`); a verificação por mensagem da emissora é o que torna a entrega precisa.
 
-## O verdadeiro caminho: uma corrida é avaliada e o veredicto chega ao seu navegador
+## O verdadeiro caminho: uma corrida é avaliada e o veredicto chega ao seu navegador {#the-real-path-a-run-is-graded-and-the-verdict-lands-in-your-browser}
 
 Agora trace um envio até o fim. Suponha que você submeta o problema C no concurso `pizza-2024`, o corredor o execute e o avaliador termine com um veredicto de `AC`.
 
@@ -67,7 +67,7 @@ Agora trace um envio até o fim. Suponha que você submeta o problema C no concu
 
 **2. Ele faz POST para `/broadcast/`.** `broadcast` (mesmo arquivo) empacota o `Message` e `client.Post` para `Grader.BroadcasterURL` — a API interna do transmissor na porta **32672**. (Quando o lado *PHP* deseja transmitir, ele faz um POST para `OMEGAUP_GRADER_URL + /broadcast/`, e o manipulador `/broadcast/` do próprio avaliador simplesmente o encaminha aqui com a mesma função `broadcast()` - portanto, há exatamente um caminho de código para o transmissor, e o avaliador é sempre o último salto.)
 
-**3. O transmissor o coloca na fila.** O manipulador `/broadcast/` em `main.go` decodifica o JSON em um `broadcaster.Message` e chama `b.Broadcast(&message)`. `Broadcast` o envolve em um `QueuedMessage` (carimbando `time.Now()` para que a latência possa ser medida posteriormente) e faz um envio *sem bloqueio* para o canal `messages` em buffer. Se esse canal estiver cheio - sua capacidade é `ChannelLength`, atualmente apenas **10** - a mensagem é descartada: ele registra `"Dropped broadcast message"`, bate no contador `channel_drop_total` e `Broadcast` retorna `false`, o que faz o manipulador responder `503 Service Unavailable`. Esta é uma escolha deliberada de redução de carga: uma atualização em tempo real que não pode ser entregue prontamente é inútil, então a emissora prefere abandoná-la a bloquear o avaliador.
+**3. O transmissor o coloca na fila.** O manipulador `/broadcast/` em `main.go` decodifica o JSON em um `broadcaster.Message` e chama `b.Broadcast(&message)`. `Broadcast` o envolve em um `QueuedMessage` (carimbando `time.Now()` para que a latência possa ser medida posteriormente) e faz um envio *sem bloqueio* para o canal `messages` em buffer. Se esse canal estiver cheio — sua capacidade é `ChannelLength`, atualmente apenas **10** — a mensagem é descartada: ele registra `"Dropped broadcast message"`, bate no contador `channel_drop_total` e `Broadcast` retorna `false`, o que faz o manipulador responder `503 Service Unavailable`. Esta é uma escolha deliberada de redução de carga: uma atualização em tempo real que não pode ser entregue prontamente é inútil, então a emissora prefere abandoná-la a bloquear o avaliador.
 
 **4. O loop principal se espalha.** `Broadcaster.Run` em `subscriber.go` é uma única goroutine `select` em quatro canais - `subscribe`, `unsubscribe`, `deauth` e `messages` - o que significa que toda a contabilidade do assinante acontece em uma goroutine e não precisa de bloqueios. Quando uma mensagem sai do `messages`, ela percorre todos os assinantes, ignora aqueles em que `s.Matches(m.message)` é falso e faz *outro* envio sem bloqueio para o canal `send` pessoal desse assinante. Aqui, o tratamento de falhas é mais agressivo: se o buffer `send` de um assinante individual estiver cheio (novamente `ChannelLength`), esse assinante é considerado muito lento ou morto, então ele é registrado, contado e **removido totalmente** - um cliente preso não pode fazer backup de todo o fan-out. Após o loop ele chama `m.Processed()`, registrando a métrica de latência do processo.
 
@@ -87,7 +87,7 @@ sequenceDiagram
     B->>C: WebSocket TextMessage (/run/update/)
     Note over B: also: contestChan <- contest alias
 ```
-## O ciclo do placar: por que um veredicto desencadeia uma segunda viagem de ida e volta
+## O ciclo do placar: por que um veredicto desencadeia uma segunda viagem de ida e volta {#the-scoreboard-loop-why-one-verdict-triggers-a-second-round-trip}
 
 Um veredicto atualizando sua própria linha é apenas metade da história. Esse mesmo `AC` pode alterar o *placar*, e o placar é calculado em PHP, não em Go. A emissora preenche isso com uma segunda etapa inteligente escondida no manipulador `/broadcast/`.
 
@@ -111,7 +111,7 @@ sequenceDiagram
     SC-->>B: broadcast /scoreboard/update/ (x2: contestant + admin)
     B->>C: push /scoreboard/update/
 ```
-## Dois transportes: WebSocket e o substituto SSE
+## Dois transportes: WebSocket e o substituto SSE {#two-transports-websocket-and-the-sse-fallback}
 
 A interface `Transport` em [`broadcaster/transport.go`](https://github.com/omegaup/quark/blob/main/broadcaster/transport.go) abstrai *como* um quadro chega a um assinante e há duas implementações. O padrão é `WebSocketTransport`, escolhido atualizando a conexão HTTP com o subprotocolo `com.omegaup.events`; seu `Send` grava um `TextMessage` sob um prazo de gravação de `WriteDeadline` (atualmente **5s**), e seu `ReadLoop` lê e *descarta* tudo o que o cliente envia — o protocolo é unidirecional, o cliente nunca responde, exceto para manter o tubo aquecido. `Ping` envia um ping de controle WebSocket.
 
@@ -119,11 +119,11 @@ O segundo é `SSETransport`, selecionado quando o cabeçalho `Accept` da solicit
 
 O frontend prefere o WebSocket e trata as falhas com elegância. No `events_socket.ts`, se o soquete nunca abrir ou cair posteriormente, o `connect()` o captura, relata um evento de telemetria `events-socket / fallback` e começa a **pesquisar** a API REST em um temporizador (`setupPolls` atinge `api.Problemset.scoreboard` e o endpoint de esclarecimentos) para que a arena continue atualizando - apenas com menos rapidez. Se o soquete for reconectado posteriormente, esses intervalos de pesquisa serão apagados. Esta é a história da degradação graciosa: um participante por trás de um proxy que mata WebSockets ainda vê um placar funcional, embora um pouco mais lento, em vez de uma página congelada.
 
-## Desautenticação: expulsando um usuário
+## Desautenticação: expulsando um usuário do {#deauthentication-kicking-a-user-off}
 
 O outro endpoint da API interna, `/deauthenticate/<user>/`, existe no momento em que um usuário efetua logout ou tem sua sessão revogada: o frontend pode dizer ao transmissor para interromper *todas* as conexões ao vivo desse usuário imediatamente, em vez de esperar que eles percebam. Ele envia o nome de usuário para o canal `deauth`; o loop `Run` principal então itera os assinantes e chama `remove` em cada um cujo `user` corresponde, o que fecha seu canal `send` e permite que sua goroutine `Subscriber.Run` se desenrole e feche o soquete. Sem isso, uma sessão revogada poderia continuar recebendo eventos de concursos privados até que seu WebSocket caísse sozinho.
 
-## Configuração
+## Configuração {#configuration}
 
 O `BroadcasterConfig` completo e seus padrões estão em [`common/context.go`](https://github.com/omegaup/quark/blob/main/common/context.go). Os valores que importam operacionalmente, todos os padrões atuais:
 
@@ -141,7 +141,7 @@ O `BroadcasterConfig` completo e seus padrões estão em [`common/context.go`](h
 
 O sinalizador `--insecure` desativa totalmente o TLS no servidor API interno e, como efeito colateral, adiciona cabeçalhos CORS permissivos no `/broadcast/` - útil para desenvolvimento local, mas como acontece com o sinalizador curl `--insecure` do aluno, é uma verruga conhecida que você nunca deseja na produção.
 
-## Métricas e observabilidade
+## Métricas e observabilidade {#metrics-and-observability}
 
 A emissora registra métricas do Prometheus em [`cmd/omegaup-broadcaster/metrics.go`](https://github.com/omegaup/quark/blob/main/cmd/omegaup-broadcaster/metrics.go), veiculado em `/metrics`. Os que valem a pena assistir, todos com prefixo `broadcaster_`:
 
@@ -150,16 +150,16 @@ A emissora registra métricas do Prometheus em [`cmd/omegaup-broadcaster/metrics
 - **`channel_drop_total`** — contador incrementado a *cada* queda, independentemente de a fila global estar cheia, a fila de um assinante estar cheia ou uma solicitação de assinatura/cancelamento de assinatura ter sido descartada. Um `channel_drop_total` crescente é o sintoma canônico de que o `ChannelLength` é muito pequeno ou que o downstream é muito lento – as atualizações em tempo real estão sendo descartadas silenciosamente.
 - **`process_latency_seconds`** / **`dispatch_latency_seconds`** — resumos que medem, respectivamente, quanto tempo uma mensagem esperou antes que o loop de distribuição a colocasse na fila para todos os assinantes e quanto tempo até que ela fosse realmente gravada na transmissão. Eles são cronometrados pelo carimbo `QueuedMessage.time` definido na ingestão. O binário também monta `net/http/pprof`, portanto, perfis goroutine e heap ativos estão disponíveis quando há suspeita de vazamento de conexão.
 
-## Código Fonte
+## Código fonte {#source-code}
 
 Tudo acima reside em [`omegaup/quark`](https://github.com/omegaup/quark):
 
 - [`cmd/omegaup-broadcaster/main.go`](https://github.com/omegaup/quark/blob/main/cmd/omegaup-broadcaster/main.go) — os dois servidores HTTP, os manipuladores `/broadcast/` e `/deauthenticate/` e o debouncer `updateScoreboardLoop`.
-- [`broadcaster/subscriber.go`](https://github.com/omegaup/quark/blob/main/broadcaster/subscriber.go) — o loop de fan-out do `Broadcaster` e o `Subscriber` (incluindo a chamada de autorização do `validateFilter`).
+- [`broadcaster/subscriber.go`](https://github.com/omegaup/quark/blob/main/broadcaster/subscriber.go) — o loop de fan-out `Broadcaster` e o `Subscriber` (incluindo a chamada de autorização `validateFilter`).
 - [`broadcaster/filter.go`](https://github.com/omegaup/quark/blob/main/broadcaster/filter.go) — os cinco tipos de filtro e suas regras de correspondência por mensagem.
 - [`broadcaster/transport.go`](https://github.com/omegaup/quark/blob/main/broadcaster/transport.go) — os transportes WebSocket e SSE.
 
-## Documentação Relacionada
+## Documentação Relacionada {#related-documentation}
 
 - **[Grader Internals](grader-internals.md)** — onde nascem os eventos `/run/update/`.
 - **[Infraestrutura](infrastructure.md)** — como o serviço é implantado e proxy.

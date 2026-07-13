@@ -3,7 +3,7 @@ title: Arquitetura de Segurança
 description: Autenticação, autorização, limitação de taxa e sandbox
 icon: bootstrap/shield
 ---
-# Arquitetura de segurança
+# Arquitetura de segurança {#security-architecture}
 
 omegaUp é, em sua essência, um lugar onde estranhos fazem upload de código e nós o executamos em nosso
 máquinas, durante competições onde o incentivo para trapacear é real. Esse único fato
@@ -47,7 +47,7 @@ flowchart TB
     Lockdown -->|mutual-TLS curl| Runner
     Runner --> Sandbox
 ```
-## Tudo viaja por HTTPS
+## Tudo viaja por HTTPS {#everything-travels-over-https}
 
 Toda a plataforma é apenas HTTPS, e o motivo é o modelo de ameaça de trapaça em concursos
 acima: se alguma solicitação puder sair em texto simples, um token de sessão ou uma declaração de problema
@@ -64,7 +64,7 @@ POST entre sites, que é a defesa CSRF para o próprio cookie).
 
 A origem configurada do próprio frontend, `OMEGAUP_URL`, é uma URL `https://` em
 produção, e o link da motoniveladora `OMEGAUP_GRADER_URL` é padronizado como
-`https://localhost:21680` – até mesmo o salto de back-end interno é TLS. Esse salto interno é
+`https://localhost:21680` — até mesmo o salto de back-end interno é TLS. Esse salto interno é
 não apenas criptografado, mas **autenticado mutuamente**: em
 [`Grader.php`](https://github.com/omegaup/omegaup/blob/main/frontend/server/src/Grader.php)
 o identificador curl é fixado com uma chave de cliente e um certificado
@@ -76,7 +76,7 @@ o identificador curl é fixado com uma chave de cliente e um certificado
 de um frontend que possui o certificado correto, e o frontend só se submeterá a um
 aluno apresentando um certificado em que confia - nenhuma das pontas fala com um estranho.
 
-### Política de segurança de conteúdo e enquadramento
+### Política de segurança de conteúdo e enquadramento {#content-security-policy-and-framing}
 
 Antes de qualquer controlador ser executado,
 [`bootstrap.php`](https://github.com/omegaup/omegaup/blob/main/frontend/server/bootstrap.php)
@@ -90,7 +90,7 @@ alguns terceiros dos quais carregamos JS (Google/analytics, Facebook, Twitter,
 Agente da New Relic). Violações POST-se de volta para `/cspreport.php`, então um romance
 tentativa de injeção aparece em nossos logs em vez de ser executada silenciosamente.
 
-## O cookie de sessão `ouat`
+## O cookie de sessão `ouat` {#the-ouat-session-cookie}
 
 Quando um humano faz login através de um navegador, sua sessão é transportada por um cookie chamado
 `ouat` — abreviação de **omegaUp Auth Token**, definido como
@@ -101,8 +101,8 @@ identificador apoiado por banco de dados. Cunhar é tarefa do `Session::register
 [`Session.php`](https://github.com/omegaup/omegaup/blob/main/frontend/server/src/Controllers/Session.php),
 e vale a pena ler em ordem de execução porque cada etapa é uma decisão de segurança.
 
-Primeiro ele grava uma linha `IdentityLoginLog` registrando o ID de identidade e o IP do cliente
-(`ip2long(REMOTE_ADDR)`), para que haja uma trilha de auditoria de quem efetuou login e de onde.
+Primeiro ele grava uma linha `IdentityLoginLog` registrando o ID da identidade e o IP do cliente
+(`ip2long(REMOTE_ADDR)`), portanto há uma trilha de auditoria de quem efetuou login e de onde.
 Então – e este é o movimento anti-cheat – ele chama
 `\OmegaUp\DAO\AuthTokens::expireAuthTokens($identity->identity_id)`, que no
 [DAO de AuthTokens](https://github.com/omegaup/omegaup/blob/main/frontend/server/src/DAO/AuthTokens.php)
@@ -151,7 +151,7 @@ sequenceDiagram
     S->>D: replace(new token row)
     S-->>U: Set-Cookie: ouat={entropy}-{id}-{sha256}; Secure; HttpOnly; SameSite=Lax
 ```
-### Como um token se torna uma sessão em cada solicitação
+### Como um token se torna uma sessão em cada solicitação {#how-a-token-becomes-a-session-on-every-request}
 
 Em cada chamada de API, `Session::getCurrentSession()` extrai o token — do
 Parâmetro de solicitação `auth_token`, se presente, caso contrário, do cookie `ouat` via
@@ -162,13 +162,13 @@ do que uma pesquisa simples: ele une `Auth_Tokens` a `Identities` em
 suporta um login atuando como outra identidade (uma conta de treinador operando uma equipe
 identidade, por exemplo) — a linha carrega tanto a **identidade de login** quanto a **identidade de atuação
 identidade**, e `ORDER BY is_main_identity DESC` os classifica para que o chamador possa saber qual
-é qual. Se o token não resolver, a sessão volta com `valid => false`,
+é qual. Se o token não for resolvido, a sessão volta com `valid => false`,
 `identity => null` e o nome de classe `user-rank-unranked`; o usuário é simplesmente tratado
 como anônimo em vez de receber um erro. Saindo
 (`Session::unregisterSession()`) exclui a linha do token e substitui o cookie por
 `setcookie(OMEGAUP_AUTH_TOKEN_COOKIE_NAME, 'deleted', 1, '/')`.
 
-## Tokens de API para acesso programático
+## Tokens de API para acesso programático {#api-tokens-for-programmatic-access}
 
 Os humanos obtêm o cookie `ouat`; scripts e bots recebem **tokens de API**, que chegam em um
 Cabeçalho `Authorization` em vez de um cookie para que nunca dependam do estado do navegador.
@@ -196,13 +196,13 @@ para que um cliente bem comportado possa recuar antes de ser bloqueado:
 | `X-RateLimit-Remaining` | quantas chamadas restam na janela atual |
 | `X-RateLimit-Reset` | o carimbo de data/hora quando a janela é reiniciada |
 
-Quando `remaining` atinge `0`, omegaUp define adicionalmente um cabeçalho `Retry-After` (os segundos
+Quando `remaining` atinge `0`, omegaUp também define um cabeçalho `Retry-After` (os segundos
 até redefinir) e lança `RateLimitExceededException` - para que o cliente seja informado não apenas
 que foi estrangulado, mas exatamente quanto tempo esperar. As sessões são armazenadas em cache em
 `Cache::SESSION_PREFIX` codificado pelo token, portanto, a resolução de um token não atinge o MySQL em
 cada chamada.
 
-## OAuth2 e login de terceiros
+## OAuth2 e login de terceiros {#oauth2-and-third-party-login}
 
 Nem todo mundo se registra com uma senha. omegaUp federa login no Google, Facebook e
 GitHub e todos os três canalizam para o mesmo ajudante privado,
@@ -217,7 +217,7 @@ Os fluxos do Facebook e do GitHub usam a biblioteca padrão **league/oauth2-clie
 em duas pequenas classes RAII no topo do `Session.php`:
 
 - **Facebook** — `ScopedFacebook` constrói um
-  `\League\OAuth2\Client\Provider\Facebook` com `OMEGAUP_FB_APPID`/`OMEGAUP_FB_SECRET`,
+  `\League\OAuth2\Client\Provider\Facebook` com `OMEGAUP_FB_APPID` / `OMEGAUP_FB_SECRET`,
   `graphApiVersion 'v2.5'`, um redirecionamento de volta para `OMEGAUP_URL . '/login?fb'` e solicitações
   apenas o osciloscópio `email`. `loginViaFacebook()` troca o `?code` por um token de acesso,
   busca o proprietário do recurso e se recusa a prosseguir se o perfil não tiver email
@@ -230,7 +230,7 @@ em duas pequenas classes RAII no topo do `Session.php`:
   no cookie `github_oauth_state` e lança `loginGitHubInvalidCSRFToken` em um
   incompatibilidade — esta é a defesa padrão do OAuth `state` contra um retorno de chamada forjado. Então
   troca o código, lê o perfil e obtém o e-mail **verificado principal** do usuário
-  de `https://api.github.com/user/emails` (uma conta GitHub pode ter vários e-mails; apenas
+  de `https://api.github.com/user/emails` (uma conta GitHub pode ter vários emails; apenas
   um `verified && primary` é confiável).
 
 O Google é tratado de maneira um pouco diferente porque usa os Serviços de Identidade do Google em vez
@@ -247,7 +247,7 @@ entregue-o para `thirdPartyLogin('Google', ...)`.
 > `frontend/server/config.php` — consulte a seção GitHub OAuth em
 > [Configuração de desenvolvimento](../getting-started/development-setup.md).
 
-## Armazenamento de senha
+## Armazenamento de senha {#password-storage}
 
 As senhas *são* armazenadas pertencem a contas nativas e são criptografadas com
 **Argon2id**, o vencedor da competição de hash de senha, em
@@ -275,11 +275,11 @@ texto simples com `SecurityTools::hashString()` e escreve de volta com
 `Identities::update()`. Assim, uma senha herdada torna-se silenciosamente uma senha Argon2id, o
 na próxima vez que seu proprietário fizer login, sem necessidade de redefinição de senha.
 
-## Tokens PASETO para serviços
+## Tokens PASETO para serviços {#paseto-tokens-for-services}
 
 Existe um segundo sistema de tokens totalmente separado e é fácil de confundir com o
 Cookie `ouat`, para ser mais preciso: o token de sessão do navegador é opaco
-`{entropy}-{identity_id}-{sha256}` acima, enquanto **PASETO** (via
+`{entropy}-{identity_id}-{sha256}` identificador acima, enquanto **PASETO** (via
 [`paragonie/paseto`](https://github.com/paragonie/paseto)) é usado para aplicações de curta duração,
 Autorização serviço a serviço *stateless* que nunca toca na tabela de sessão. Ambos
 viver em `SecurityTools.php`.
@@ -306,7 +306,7 @@ e `course == $courseAlias`, e verifica separadamente `ValidAt` quanto à expira�
 cunhado para clonar o curso A, portanto, não pode ser reproduzido para clonar o curso B, mesmo antes de
 expira.
 
-## Modo Lockdown para concursos no local
+## Modo Lockdown para concursos no local {#lockdown-mode-for-onsite-contests}
 
 omegaUp realiza concursos oficiais no local (pense em salas estilo ICPC cheias de competidores em um
 LAN bloqueada) e "modo de bloqueio" é como a mesma base de código atende tanto o aberto
@@ -347,7 +347,7 @@ O caminho principal "leia os problemas deste concurso e envie-os" continua funci
 colocado em linha em cada operação protegida, em vez de como um único portão global, precisamente assim
 que as operações seguras permaneçam disponíveis enquanto as arriscadas não.
 
-## A caixa de areia omegajail
+## A caixa de areia omegajail {#the-omegajail-sandbox}
 
 Tudo acima protege o *frontend*. A última linha de defesa protege o
 *máquinas que executam o código do concorrente*, e ele reside inteiramente no Go Grader
@@ -370,7 +370,7 @@ a integração está em
 `OmegajailSandbox` cria uma linha de comando `bin/omegajail` e desembolsa para ela via
 `invokeOmegajail()`.
 
-### O que o Omegajail restringe
+### O que omegajail restringe {#what-omegajail-restricts}
 
 omegajail envolve o processo não confiável em um **chroot** (`--root /var/lib/omegajail`) com
 seu próprio `/dev` mínimo (um `/dev/null` real do `mknod` - a sandbox até substitui um
@@ -390,7 +390,7 @@ manipulador. Em kernels anteriores a 5.13, esse detector precisa de uma implemen
 assuntos para um juiz: uma submissão que tenta abrir uma tomada, bifurcar um enxame de processos,
 ou `execve` um shell é interrompido no limite do kernel, nunca dentro do nosso código.
 
-### Limites de recursos e os veredictos que eles produzem
+### Limites de recursos e os veredictos que eles produzem {#resource-limits-and-the-verdicts-they-produce}
 
 Os limites são passados para omegajail como sinalizadores explícitos e aplicados pela sandbox, não pelo
 Vá processar a pergunta educadamente. De `OmegajailSandbox.Run()`:
@@ -416,7 +416,7 @@ mensagem útil (*"Certifique-se de que sua classe se chama `<target>` e está fo
 porque um arquivo Java que compila, mas produz o nome de classe errado, caso contrário, falharia
 misteriosamente em tempo de execução.
 
-## Documentação relacionada
+## Documentação relacionada {#related-documentation}
 
 - **[Runner internals](runner-internals.md)** — o pipeline de classificação que impulsiona o sandbox
 - **[API de autenticação](../reference/api.md)** — os pontos de extremidade de login, token e OAuth

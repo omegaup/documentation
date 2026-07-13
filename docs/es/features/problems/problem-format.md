@@ -3,7 +3,7 @@ title: Formato del problema
 description: Estructura de archivos ZIP para la creación manual de problemas
 icon: bootstrap/file-document
 ---
-# Formato del problema (ZIP manual)
+# Problema de formato (ZIP manual) {#problem-format-manual-zip}
 
 Esta página es para quienes tienen experiencia en resolver problemas y necesitan crear un problema a mano.
 `.zip`, o editar un omegaUp ya implementado, porque necesitan algo que
@@ -33,13 +33,13 @@ Así que piense en el `.zip` como *fuente* y en el `settings.json` como el *arte
 que es exactamente por qué los nombres de directorio y las extensiones de archivo a continuación deben ser
 letra perfecta.
 
-## Los ajustes configurables (modelo mental)
+## Los ajustes configurables (modelo mental) {#the-configurable-settings-mental-model}
 
 Ya sea que los configure a través de la interfaz de usuario web o los envíe en metadatos empaquetados, cada
 El problema conlleva el mismo puñado de perillas. Comprender lo que cada uno *significa* -
 y el veredicto que obtiene cuando se excede es lo que le permite empaquetar correctamente.
 
-### Validador: cómo se juzga la producción del concursante
+### Validador: cómo se juzga la producción del concursante {#validator-how-the-contestants-output-is-judged}
 
 El validador decide si un resultado es correcto y otorga una puntuación por caso en
 `[0.0, 1.0]`. omegaUp envía cinco, cuyos nombres canónicos viven en
@@ -57,7 +57,7 @@ El validador decide si un resultado es correcto y otorga una puntuación por cas
 - **`token-caseless`**: igual que `token`, pero primero pone en minúsculas cada token, por lo que
   `Yes` y `yes` coinciden. Busque esto cuando la capitalización no sea parte del
   respuesta.
-- **`token-numeric`** — lee sólo tokens numéricos, los interpreta como números,
+- **`token-numeric`** — lee únicamente tokens numéricos, los interpreta como números,
   y los acepta cuando el valor del concursante esté dentro de un **absoluto *o*
   error relativo de 1e-9** del valor esperado (el `Tolerance` predeterminado, también
   `1e-9`, instalado en
@@ -74,7 +74,7 @@ El validador decide si un resultado es correcto y otorga una puntuación por cas
   imprime la partitura misma. Los detalles completos y los ejemplos elaborados se encuentran en
   [Validador personalizado](#custom-validator-validatorlang) a continuación.
 
-### Idiomas: qué puede presentar el concursante
+### Idiomas: lo que podrá presentar el concursante {#languages-what-the-contestant-may-submit}
 
 - **C, C++, Java, Python, …** — el concursante envía la fuente en uno de omegaUp
   Idiomas admitidos.
@@ -83,11 +83,11 @@ El validador decide si un resultado es correcto y otorga una puntuación por cas
 - **Solo resultados**: el concursante carga un `.zip` de respuestas para cada caso.
   en lugar de un programa. Si quieres *también* dejarles pegar un solo caso
   responda como texto plano en lugar de como zip, el problema debe tener exactamente **uno**
-  caso llamado `Main.in`/`Main.out`.
+  caso denominado `Main.in`/`Main.out`.
 - **No hay presentaciones**: el concursante no puede enviar nada. Esto existe puramente para
   mostrar contenido (una lectura, una lección) dentro de un curso.
 
-### Límites de tiempo, memoria y salida
+### Límites de tiempo, memoria y salida {#time-memory-and-output-limits}
 
 Cada uno de estos se asigna a un veredicto específico cuando el programa del concursante lo cruza,
 y cada uno tiene un valor predeterminado real. El formulario de creación de problemas actualmente completa previamente estos
@@ -107,7 +107,7 @@ Estoy de acuerdo con ellos, por lo que un paquete que omite límites aún se eje
   antes de esta fecha límite simplemente **no se evalúa**. Para mantener los resultados al menos
   algo consistente cuando esto se activa, los casos se evalúan en **lexicográfico
   orden**, por lo que los casos que se omiten son deterministas y no aleatorios.
-- **Límite de memoria: `MemoryLimit` (KiB), predeterminado `32768`** (es decir, 32 MiB): el
+- **Límite de memoria: `MemoryLimit` (KiB), `32768` predeterminado** (es decir, 32 MiB): el
   RAM máxima (montón + pila) que el sistema operativo permite que el programa use antes de eliminarlo con
   **`MLE`**. Se expresa en
   [kibibytes](https://en.wikipedia.org/wiki/Kibibyte), por lo que `32768` KiB = 32 MiB.
@@ -116,7 +116,7 @@ Estoy de acuerdo con ellos, por lo que un paquete que omite límites aún se eje
   problemas de token omegaUp normalmente **detecta automáticamente** esto desde sus archivos `.out` —
   toma el más grande y agrega 10 KiB de espacio libre, por lo que rara vez lo configuras por
   mano. **Pero si usas un validador personalizado debes configurarlo explícitamente**, porque
-  no existe un `.out` simple para comparar.
+  No existe un `.out` sencillo con el que comparar.
 - **Límite de entrada: `inputLimit` (bytes), `10240` predeterminado**: la longitud máxima de
   el **código fuente** del concursante. Baja esto cuando quieras detener a la gente.
   de pegar una tabla de respuestas precalculada en lugar de resolver realmente la
@@ -137,7 +137,7 @@ Estoy de acuerdo con ellos, por lo que un paquete que omite límites aún se eje
     La idea es que juzgar puede darse el lujo de ser más lento y más hambriento que el
     La solución del concursante.
 
-### Todo lo demás
+### Todo lo demás {#everything-else}
 
 - **Fuente**: atribución/origen de la declaración, mostrada a los concursantes.
 - **Aparece en el listado público**: si el problema se puede mostrar públicamente y
@@ -146,7 +146,7 @@ Estoy de acuerdo con ellos, por lo que un paquete que omite límites aún se eje
   El usuario pide una aclaración sobre este problema.
 - **Etiquetas**: etiquetas de clasificación.
 
-## El diseño ZIP
+## El diseño ZIP {#the-zip-layout}
 
 Guarde todo en un archivo **`.zip`**, no en `.rar`, `.tar.bz2`, `.7z` o
 `.zx`. El nombre del zip en sí no importa. Un mínimo problema de idioma
@@ -182,7 +182,7 @@ y hay muchos más debajo
     No se encontrará la carpeta llamada `Cases`, ni tampoco un archivo de entrada que termine
     en `.In` en lugar de `.in`.
 
-### `cases/`
+### `cases/` {#cases}
 
 Esta carpeta contiene todos los casos de prueba como archivos `.in`/`.out` emparejados. Los **nombres base
 debe coincidir** — `1.in` con `1.out`, `hola.in` con `hola.out` — pero el nombre base
@@ -213,7 +213,7 @@ y en un concurso en vivo que se traduce directamente en tiempos de espera en las
 doloroso cuando una solución lenta, vinculada a `TLE`, está por delante de todos los demás en el
 cola.
 
-### `statements/`
+### `statements/` {#statements}
 
 Esto contiene la declaración del problema en Markdown (el mismo estilo que usa Wikipedia), uno
 archivo por configuración regional: `es.markdown`, `en.markdown`, `pt.markdown`. Al menos uno es
@@ -222,11 +222,11 @@ requerido. Puede obtener una vista previa exactamente de cómo se representarán
 esto y confirme que las tablas de entrada/salida se ven bien, porque una declaración confusa
 Es una experiencia miserable a mitad de la competencia.
 
-LaTeX es totalmente compatible. Ajuste los nombres de las variables en `$…$`: escriba `$n$`, `$x$`,
-`$x_i$` para un subíndice, para que se destaquen de la prosa y los concursantes puedan encontrarlos
+LaTeX es totalmente compatible. Envuelva los nombres de las variables en `$…$`: escriba `$n$`, `$x$`,
+`$x_i$` para un subíndice, para que se destaquen de la prosa y los concursantes puedan encontrar
 ellos de un vistazo. Se lee mejor y evita ambigüedades.
 
-### `solutions/`
+### `solutions/` {#solutions}
 
 Estructuralmente idéntico a `statements/`: el artículo oficial de la solución en
 Markdown, nombrado según la configuración regional (`es.markdown` y traducciones `en.markdown`,
@@ -234,7 +234,7 @@ Markdown, nombrado según la configuración regional (`es.markdown` y traduccion
 [`testproblem.zip`](https://github.com/omegaup/omegaup/blob/main/frontend/tests/resources/testproblem.zip)
 Incluye un ejemplo de soluciones.
 
-### `interactive/` (opcional)
+### `interactive/` (opcional) {#interactive-optional}
 
 Problemas interactivos: donde el programa del concursante habla de un lado a otro con un
 juzgar el proceso en lugar de leer una entrada fija, debe construirse con
@@ -248,7 +248,7 @@ Una comodidad que el implementador maneja por usted: casos de muestra de libinte
 uno automáticamente
 ([`ziphandler.go`](https://github.com/omegaup/gitserver/blob/main/ziphandler.go#L495-L514)).
 
-### Validador personalizado (`validator.<lang>`)
+### Validador personalizado (`validator.<lang>`) {#custom-validator-validatorlang}
 
 Cuando la comparación de tokens no es suficiente: múltiples respuestas correctas, juez especial
 puntuación, crédito parcial: envíe exactamente **un** archivo llamado `validator.<lang>` a
@@ -276,7 +276,7 @@ Aquí está el contrato exacto y vale la pena hacerlo bien:
   tiene éxito.
 
 Un validador para [sumas](https://omegaup.com/arena/problem/sumas) (leer dos
-números enteros, imprima su suma) en C++ 17; observe cómo se lee el `a` y `b` originales
+números enteros, imprima su suma) en C++ 17; observe cómo se leen los `a` y `b` originales
 de `data.in`, la suma esperada de `data.out`, la respuesta del concursante de
 stdin e imprime `1.0` o `0.0`:
 
@@ -357,7 +357,7 @@ def _main():
 if __name__ == '__main__':
   _main()
 ```
-### `testplan` (opcional)
+### `testplan` (opcional) {#testplan-optional}
 
 De forma predeterminada **cada caso vale `1/number-of-cases`**: el implementador asigna cada
 caso un peso de `1/1` y el clasificador normaliza todos los pesos para que sumen 1
@@ -385,7 +385,7 @@ realmente se aplica, haciendo coincidir cada línea con
 - **`#` inicia un comentario**: una línea cuyo primer carácter que no sea un espacio es `#` (y cualquier
   línea que no coincide con el patrón) se omite, para que pueda anotar su
   plan de prueba.
-- El `testplan` y el `.zip` deben **concordar en el conjunto de casos**. gitserver se ejecuta
+- El `testplan` y el `.zip` deben **concordar en el conjunto de cajas**. gitserver se ejecuta
   una *diferencia simétrica* en ambos sentidos
   ([`ziphandler.go`](https://github.com/omegaup/gitserver/blob/main/ziphandler.go#L463-L488)):
   un caso en el plan de prueba pero que falta en `cases/` falla con
@@ -405,7 +405,7 @@ La convención de "puntos en el primer caso, cero en el resto" funciona: resuelv
 agrupa y recoges todo el peso; Se pierde cualquier caso y el grupo colapsa.
 cero.
 
-### `settings.json` (generalmente generado, ocasionalmente escrito a mano)
+### `settings.json` (generalmente generado, ocasionalmente escrito a mano) {#settingsjson-usually-generated-occasionally-hand-written}
 
 La mayoría de las veces *nunca* escribirás este archivo: es el artefacto compilado de gitserver.
 produce desde su `cases/`, `testplan` y límites, ordenados en
@@ -419,7 +419,7 @@ bloque. Si *envías* tu propio `settings.json`, gitserver lo lee y aún así
 permite que un `testplan` anule los pesos de la caja encima. De cualquier manera, sólo el
 El `settings.json` generado sobrevive en el repositorio de problemas implementado.
 
-## Imágenes
+## Imágenes {#images}
 
 omegaUp tiene soporte de imágenes nativas :). Para incrustar una imagen en una declaración, agregue el
 archivo de imagen a su zip **dentro de `statements/`** y haga referencia a él desde su
@@ -431,12 +431,12 @@ archivo de imagen a su zip **dentro de `statements/`** y haga referencia a él d
 Los formatos admitidos son **jpg, gif, png**. Tenga en cuenta el tamaño: Markdown **no**
 cambie su escala, así que mantenga las imágenes con **650 píxeles de ancho** o menos.
 
-## Ejemplo de cremalleras
+## Ejemplo de zips {#example-zips}
 
 Los zips que omegaUp utiliza en sus propias pruebas son las mejores plantillas para copiar:
 [`frontend/tests/resources`](https://github.com/omegaup/omegaup/tree/main/frontend/tests/resources).
 
-## Problemas de Karel
+## Problemas de Karel {#karel-problems}
 
 Primero, prueba [karel.js](https://omegaup.com/karel.js/): convierte casos para
 usted y es mucho menos problemático que lo que sigue.
@@ -477,7 +477,7 @@ ejecute `python` desde la consola de DOS antes de comenzar.
 9. Finalmente, agregue una carpeta `statements` con `es.markdown` y comprímala exactamente como
    Tendrías un problema de idioma.
 
-## Cómo se junta todo
+## Cómo se junta todo {#how-it-all-comes-together}
 
 Para cerrar el ciclo: cuando subes, gitserver
 [`ziphandler.go`](https://github.com/omegaup/gitserver/blob/main/ziphandler.go)
@@ -487,13 +487,13 @@ confirma todo como una nueva revisión del repositorio git del problema, y
 elimina el ahora redundante `testplan`. En el momento de la calificación, la interfaz PHP
 (`\OmegaUp\Controllers\Run::apiCreate` →
 [`\OmegaUp\Grader::grade`](https://github.com/omegaup/omegaup/blob/main/frontend/server/src/Grader.php))
-entrega el envío al evaluador Go a través de HTTP, que lee que `settings.json`,
+entrega el envío al evaluador Go a través de HTTP, que dice que `settings.json`,
 normaliza los pesos de los casos para que sumen 1, ejecuta cada caso bajo el sandbox contra
 sus límites, aplica el validador y acumula las puntuaciones por caso a través del
 política de puntuación del grupo. Cada ruta y extensión en este documento existe para hacer que
 la canalización se resuelve correctamente, por lo que es importante lograr que sean exactamente correctas.
 
-## Documentación relacionada
+## Documentación relacionada {#related-documentation}
 
 - **[Creando problemas](creating-problems.md)**: el flujo de trabajo de creación y las rutas de la interfaz de usuario
 - **[Veredictos](../verdicts.md)**: qué significan `AC`, `TLE`, `MLE`, `OLE`, `JE` y el resto
