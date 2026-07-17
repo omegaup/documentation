@@ -6,6 +6,7 @@ This server properly serves all language versions from the site/ directory,
 allowing language switching to work correctly during local development.
 """
 
+import errno
 import http.server
 import re
 import socketserver
@@ -43,12 +44,17 @@ def _warn_if_favicon_href_mismatch():
 
 if not SITE_DIR.exists():
     print(f"Error: {SITE_DIR} does not exist.")
-    print("Please build the site first using: zensical build")
+    print("Please build the site first using: python3 build_all.py")
     sys.exit(1)
 
 _warn_if_favicon_href_mismatch()
 
-PORT = 8000
+DEFAULT_PORT = 8000
+
+
+class MultiLangTCPServer(socketserver.TCPServer):
+    # Avoid spurious "address already in use" when restarting right after Ctrl+C.
+    allow_reuse_address = True
 
 
 class MultiLangHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
@@ -72,8 +78,35 @@ class MultiLangHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
         
         return super().do_GET()
 
+def _parse_port(argv):
+    """Port from CLI arg (python3 serve_multilang.py 8080), else DEFAULT_PORT."""
+    if len(argv) <= 1:
+        return DEFAULT_PORT
+    try:
+        return int(argv[1])
+    except ValueError:
+        print(f"Error: invalid port '{argv[1]}'. Usage: python3 serve_multilang.py [port]")
+        sys.exit(1)
+
+
+def _bind(start_port):
+    """First free port at/after start_port, so a busy 8000 falls back instead of crashing."""
+    for port in range(start_port, start_port + 20):
+        try:
+            return MultiLangTCPServer(("", port), MultiLangHTTPRequestHandler)
+        except OSError as exc:
+            if exc.errno != errno.EADDRINUSE:
+                raise
+            print(f"Port {port} is already in use, trying {port + 1}...")
+    print(f"Error: no free port found in {start_port}-{start_port + 19}.")
+    print("Free a port or pass one explicitly: python3 serve_multilang.py <port>")
+    sys.exit(1)
+
+
 if __name__ == "__main__":
-    with socketserver.TCPServer(("", PORT), MultiLangHTTPRequestHandler) as httpd:
+    httpd = _bind(_parse_port(sys.argv))
+    PORT = httpd.server_address[1]
+    with httpd:
         print(f"🌍 Multi-language documentation server running at http://localhost:{PORT}/")
         print(f"📂 Serving from: {SITE_DIR}")
         print(f"\n Available languages:")
