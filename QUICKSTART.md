@@ -4,13 +4,20 @@
 
 ### First Time Setup
 ```bash
-# 1. Create virtual environment
+# 1. Fork this repo on GitHub, then clone your fork
+git clone https://github.com/<your-username>/ou-documentation.git
+cd ou-documentation
+
+# (optional) track the upstream repo to pull in updates later
+git remote add upstream https://github.com/omegaup/documentation.git
+
+# 2. Create virtual environment
 python3 -m venv .venv
 
-# 2. Activate it
+# 3. Activate it
 source .venv/bin/activate  # macOS/Linux
 
-# 3. Install dependencies
+# 4. Install dependencies
 pip install zensical
 ```
 
@@ -93,6 +100,15 @@ source .venv/bin/activate
 # Verify zensical is installed
 which zensical
 # Should output: .venv/bin/zensical
+```
+
+### Problem: Port 8000 already in use
+
+The server auto-falls back to the next free port (8001, 8002, …) and prints the
+URL it landed on. To pick a port yourself:
+
+```bash
+python3 serve_multilang.py 8080
 ```
 
 ### Problem: Changes not showing
